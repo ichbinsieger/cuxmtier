@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         homeTeam: s.homeTeam, awayTeam: s.awayTeam, tournament: s.tournament,
         marketDesc: s.marketDesc, pickDesc: s.pickDesc, odds: s.odds,
         probability: s.probability, matchStatus: s.matchStatus,
-        riskScore: s.riskScore, riskReasons: s.riskReasons,
+        riskScore: s.riskScore, riskReasons: s.riskReasons, safeReasons: s.safeReasons,
         eventId: s.eventId, marketId: s.marketId, outcomeId: s.outcomeId,
         specifierRaw: s.specifierRaw, productId: s.productId, sportId: s.sportId,
       })),

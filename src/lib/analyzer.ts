@@ -14,6 +14,7 @@ export interface AnalyzedSelection {
   // Risk
   riskScore: number;      // 0-100, higher = riskier
   riskReasons: string[];  // why it's risky
+  safeReasons: string[];  // why it's safe
   // Original ref
   eventId: string;
   marketId: string;
@@ -31,7 +32,7 @@ export interface AnalysisResult {
 }
 
 // ============================================================
-// RISK SCORING ENGINE
+// RISK SCORING ENGINE — with detailed reasons for BOTH safe & risky
 // ============================================================
 
 // Tournament tier — lower = safer
@@ -122,59 +123,73 @@ function getCategoryRisk(category: string): number {
 
 function scoreSelection(
   resolved: ReturnType<typeof resolveOutcome>
-): { riskScore: number; riskReasons: string[] } {
-  if (!resolved) return { riskScore: 50, riskReasons: ["Could not resolve selection"] };
+): { riskScore: number; riskReasons: string[]; safeReasons: string[] } {
+  if (!resolved) return { riskScore: 50, riskReasons: ["Could not resolve selection"], safeReasons: [] };
 
-  const reasons: string[] = [];
+  const riskReasons: string[] = [];
+  const safeReasons: string[] = [];
   let score = 0;
 
-  // Tournament risk (weight: 35%)
+  // Tournament risk (weight: 30%)
   const tournamentRisk = getTournamentRisk(resolved.tournament);
-  score += tournamentRisk * 0.35;
-  if (tournamentRisk > 20) reasons.push(`Obscure tournament: ${resolved.tournament}`);
-  if (tournamentRisk > 25) reasons.push("Very low-tier competition");
+  score += tournamentRisk * 0.30;
+  if (tournamentRisk <= 12) safeReasons.push(`Major competition: ${resolved.tournament}`);
+  else if (tournamentRisk <= 15) {} // neutral
+  else if (tournamentRisk <= 20) riskReasons.push(`Mid-tier tournament: ${resolved.tournament}`);
+  else if (tournamentRisk <= 25) riskReasons.push(`Low-tier tournament: ${resolved.tournament} — less data, more unpredictable`);
+  else riskReasons.push(`Very obscure tournament: ${resolved.tournament} — extremely unreliable`);
 
   // Market risk (weight: 30%)
   const marketRisk = getMarketRisk(resolved.marketDesc, resolved.marketGroup, resolved.specifier);
   score += marketRisk * 0.30;
-  if (marketRisk > 18) reasons.push(`Complex market: ${resolved.marketDesc}`);
-  if (resolved.marketDesc.toLowerCase().includes("handicap")) reasons.push("Handicap bet — margin matters");
+  if (marketRisk <= 8) safeReasons.push(`Simple market: ${resolved.marketDesc} — high probability`);
+  else if (marketRisk <= 13) {} // neutral combo markets
+  else if (marketRisk <= 16) riskReasons.push(`Handicap bet: ${resolved.marketDesc} — requires goal margin`);
+  else if (marketRisk <= 20) riskReasons.push(`Complex market: ${resolved.marketDesc} — harder to predict`);
+  else riskReasons.push(`Very niche market: ${resolved.marketDesc} — extremely specific condition`);
 
   // Category risk (weight: 15%)
   const categoryRisk = getCategoryRisk(resolved.category);
   score += categoryRisk * 0.15;
+  if (categoryRisk <= 12) safeReasons.push(`Reliable region: ${resolved.category}`);
+  else if (categoryRisk >= 22) riskReasons.push(`Unreliable region: ${resolved.category} — volatile leagues`);
 
-  // Odds risk (weight: 20%) — higher odds = more uncertainty
+  // Odds risk (weight: 25%)
   const odds = resolved.odds;
   if (odds > 1.6) {
-    score += 25 * 0.20;
-    reasons.push(`High odds (${odds}) — market sees this as unlikely`);
+    score += 25 * 0.25;
+    riskReasons.push(`Long odds (${odds}) — market heavily favors the other side`);
   } else if (odds > 1.45) {
-    score += 18 * 0.20;
-    reasons.push(`Elevated odds (${odds})`);
+    score += 18 * 0.25;
+    riskReasons.push(`Above-average odds (${odds}) — moderate uncertainty`);
   } else if (odds > 1.35) {
-    score += 12 * 0.20;
+    score += 12 * 0.25;
   } else if (odds > 1.25) {
-    score += 8 * 0.20;
+    score += 6 * 0.25;
+    safeReasons.push(`Short odds (${odds}) — market expects this to land`);
   } else {
-    score += 4 * 0.20;
+    score += 2 * 0.25;
+    safeReasons.push(`Very short odds (${odds}) — highly probable outcome`);
   }
 
   // Live game risk
   if (resolved.matchStatus !== "Not start") {
     score += 5;
-    reasons.push("Live/in-play game — momentum can shift");
+    riskReasons.push("Live game — momentum can shift quickly mid-match");
   }
 
   // Probability adjustment
-  if (resolved.probability < 0.65) {
+  if (resolved.probability > 0.75) {
+    safeReasons.push(`High implied probability (${Math.round(resolved.probability * 100)}%)`);
+  } else if (resolved.probability < 0.65) {
     score += 5;
-    reasons.push(`Low implied probability (${Math.round(resolved.probability * 100)}%)`);
+    riskReasons.push(`Low implied probability (${Math.round(resolved.probability * 100)}%) — bookmakers are uncertain`);
   }
 
   return {
     riskScore: Math.round(Math.min(100, score)),
-    riskReasons: reasons,
+    riskReasons,
+    safeReasons,
   };
 }
 
@@ -189,7 +204,7 @@ export function analyzeSelections(
 ): AnalysisResult {
   const selections: AnalyzedSelection[] = ticketSelections.map(sel => {
     const resolved = resolveOutcome(outcomes, sel);
-    const { riskScore, riskReasons } = scoreSelection(resolved);
+    const { riskScore, riskReasons, safeReasons } = scoreSelection(resolved);
     
     return {
       homeTeam: resolved?.homeTeam || "Unknown",
@@ -203,6 +218,7 @@ export function analyzeSelections(
       matchStatus: resolved?.matchStatus || "Unknown",
       riskScore,
       riskReasons,
+      safeReasons,
       eventId: sel.eventId,
       marketId: sel.marketId,
       outcomeId: sel.outcomeId,
