@@ -133,57 +133,57 @@ function scoreSelection(
   // Tournament risk (weight: 30%)
   const tournamentRisk = getTournamentRisk(resolved.tournament);
   score += tournamentRisk * 0.30;
-  if (tournamentRisk <= 12) safeReasons.push(`Major competition: ${resolved.tournament}`);
+  if (tournamentRisk <= 12) safeReasons.push(`Big league: ${resolved.tournament}`);
   else if (tournamentRisk <= 15) {} // neutral
-  else if (tournamentRisk <= 20) riskReasons.push(`Mid-tier tournament: ${resolved.tournament}`);
-  else if (tournamentRisk <= 25) riskReasons.push(`Low-tier tournament: ${resolved.tournament} — less data, more unpredictable`);
-  else riskReasons.push(`Very obscure tournament: ${resolved.tournament} — extremely unreliable`);
+  else if (tournamentRisk <= 20) riskReasons.push(`Small tournament: ${resolved.tournament}`);
+  else if (tournamentRisk <= 25) riskReasons.push(`Minor league: ${resolved.tournament} — hard to predict`);
+  else riskReasons.push(`Unknown league: ${resolved.tournament} — very unreliable`);
 
   // Market risk (weight: 30%)
   const marketRisk = getMarketRisk(resolved.marketDesc, resolved.marketGroup, resolved.specifier);
   score += marketRisk * 0.30;
-  if (marketRisk <= 8) safeReasons.push(`Simple market: ${resolved.marketDesc} — high probability`);
+  if (marketRisk <= 8) safeReasons.push(`Easy bet: ${resolved.marketDesc}`);
   else if (marketRisk <= 13) {} // neutral combo markets
-  else if (marketRisk <= 16) riskReasons.push(`Handicap bet: ${resolved.marketDesc} — requires goal margin`);
-  else if (marketRisk <= 20) riskReasons.push(`Complex market: ${resolved.marketDesc} — harder to predict`);
-  else riskReasons.push(`Very niche market: ${resolved.marketDesc} — extremely specific condition`);
+  else if (marketRisk <= 16) riskReasons.push(`Tricky market: ${resolved.marketDesc}`);
+  else if (marketRisk <= 20) riskReasons.push(`Hard to call: ${resolved.marketDesc}`);
+  else riskReasons.push(`Very specific bet: ${resolved.marketDesc}`);
 
   // Category risk (weight: 15%)
   const categoryRisk = getCategoryRisk(resolved.category);
   score += categoryRisk * 0.15;
   if (categoryRisk <= 12) safeReasons.push(`Reliable region: ${resolved.category}`);
-  else if (categoryRisk >= 22) riskReasons.push(`Unreliable region: ${resolved.category} — volatile leagues`);
+  else if (categoryRisk >= 22) riskReasons.push(`Unstable region: ${resolved.category}`);
 
   // Odds risk (weight: 25%)
   const odds = resolved.odds;
   if (odds > 1.6) {
     score += 25 * 0.25;
-    riskReasons.push(`Long odds (${odds}) — market heavily favors the other side`);
+    riskReasons.push(`High odds (${odds}) — unlikely to win`);
   } else if (odds > 1.45) {
     score += 18 * 0.25;
-    riskReasons.push(`Above-average odds (${odds}) — moderate uncertainty`);
+    riskReasons.push(`Risky odds (${odds}) — not a sure thing`);
   } else if (odds > 1.35) {
     score += 12 * 0.25;
   } else if (odds > 1.25) {
     score += 6 * 0.25;
-    safeReasons.push(`Short odds (${odds}) — market expects this to land`);
+    safeReasons.push(`Short odds (${odds}) — likely to land`);
   } else {
     score += 2 * 0.25;
-    safeReasons.push(`Very short odds (${odds}) — highly probable outcome`);
+    safeReasons.push(`Very short odds (${odds}) — almost certain`);
   }
 
   // Live game risk
   if (resolved.matchStatus !== "Not start") {
     score += 5;
-    riskReasons.push("Live game — momentum can shift quickly mid-match");
+    riskReasons.push("Game is live — things can change fast");
   }
 
   // Probability adjustment
   if (resolved.probability > 0.75) {
-    safeReasons.push(`High implied probability (${Math.round(resolved.probability * 100)}%)`);
+    safeReasons.push(`${Math.round(resolved.probability * 100)}% chance according to bookies`);
   } else if (resolved.probability < 0.65) {
     score += 5;
-    riskReasons.push(`Low implied probability (${Math.round(resolved.probability * 100)}%) — bookmakers are uncertain`);
+    riskReasons.push(`Only ${Math.round(resolved.probability * 100)}% chance — bookies are unsure`);
   }
 
   return {
