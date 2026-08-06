@@ -85,7 +85,7 @@ export default function Home() {
       if (!r.ok) throw new Error(d.error);
       setShrinkResult(d);
       // Pre-check the removed ones
-      const removedKeys = new Set(d.removed.map((s: Selection) => selKey(s)));
+      const removedKeys = new Set<string>((d.removed as Selection[]).map((s: Selection) => selKey(s)));
       setCheckedIds(removedKeys);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
@@ -120,7 +120,7 @@ export default function Home() {
 
   // Get display list
   const allSelections: Selection[] = analysis?.selections || [];
-  const removedKeys = shrinkResult ? new Set(shrinkResult.removed.map(s => selKey(s))) : new Set<string>();
+  const removedKeys: Set<string> = shrinkResult ? new Set<string>(shrinkResult.removed.map((s: Selection) => selKey(s))) : new Set<string>();
   const checkedKeys = manualMode ? checkedIds : removedKeys;
   const keptSelections = allSelections.filter(s => !checkedKeys.has(selKey(s)));
   const removedSelections = allSelections.filter(s => checkedKeys.has(selKey(s)));
