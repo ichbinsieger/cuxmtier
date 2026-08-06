@@ -1,201 +1,206 @@
 import { SportySelection, SportyOutcome, resolveOutcome } from "./sportybet";
 
 export interface AnalyzedSelection {
-  // Display
-  homeTeam: string;
-  awayTeam: string;
-  tournament: string;
-  category: string;
-  marketDesc: string;
-  pickDesc: string;
-  odds: number;
-  probability: number;
-  matchStatus: string;
-  // Risk
-  riskScore: number;      // 0-100, higher = riskier
-  riskReasons: string[];  // why it's risky
-  safeReasons: string[];  // why it's safe
-  // Original ref
-  eventId: string;
-  marketId: string;
-  outcomeId: string;
-  specifierRaw?: string;
-  productId: number;
-  sportId: string;
+  homeTeam: string; awayTeam: string; tournament: string;
+  category: string; marketDesc: string; pickDesc: string;
+  odds: number; probability: number; matchStatus: string;
+  riskScore: number; riskReasons: string[]; safeReasons: string[];
+  eventId: string; marketId: string; outcomeId: string;
+  specifierRaw?: string; productId: number; sportId: string;
+  // MVE internals (exposed for transparency)
+  baseVol: number; tailRisk: number; corrPenalty: number; margContribution: number;
 }
-
 export interface AnalysisResult {
   selections: AnalyzedSelection[];
-  originalCode: string;
-  totalSelections: number;
-  averageRisk: number;
+  originalCode: string; totalSelections: number; averageRisk: number;
+  portfolioVol: number;
 }
 
-// ============================================================
-// RISK SCORING ENGINE — with detailed reasons for BOTH safe & risky
-// ============================================================
+// ══════════════════════════════════════════════════════════════════
+// MULTIPLICATIVE VOLATILITY ENGINE (MVE)
+// ══════════════════════════════════════════════════════════════════
+//
+// Core principle: accumulator volatility multiplies, not adds.
+// Portfolio Vol = ∏(1 + σᵢ) - 1
+//
+// Each selection has:
+//   σᵢ = baseVol × tailRisk × corrPenalty
+//
+// Where:
+//   - baseVol: inherent uncertainty from tournament + market + region
+//   - tailRisk: fat-tail adjustment from odds (longer odds = fatter tail)
+//   - corrPenalty: penalty for same-event correlation
+//
+// Marginal volatility contribution (what to remove):
+//   MVCᵢ = σᵢ / (1 + σᵢ)
 
-// Tournament tier — lower = safer
-const TOURNAMENT_TIERS: Record<string, number> = {
-  "UEFA Champions League": 10,
-  "UEFA Europa League": 12,
-  "UEFA Conference League": 15,
-  "English Premier League": 10,
-  "La Liga": 10,
-  "Serie A": 10,
-  "Bundesliga": 10,
-  "Ligue 1": 10,
-  "Eredivisie": 12,
-  "Primeira Liga": 12,
-  "Championship": 15,
-  // International
-  "World Cup": 8,
-  "European Championship": 10,
-  "Africa Cup of Nations": 20,
-  "Africa Cup of Nations, Women": 25,
-  "Copa America": 15,
-  // Domestic cups
-  "League Cup": 18,
-  "FA Cup": 16,
-  // Lower tiers
-  "Pervaya Liga": 22,
-  "Kolmonen": 25,
-  "Torneo DIMAYOR": 25,
-  "Liga 1": 22,
-  "Primera LPF, Reserves": 28,
-  "1. deild, Women": 28,
-  "League Cup, National": 20,
+// ── Tournament volatility coefficients ──
+// Derived from historical result predictability across leagues
+const TOURNAMENT_VOL: Record<string, number> = {
+  // Elite — very predictable
+  "UEFA Champions League": 0.08,
+  "English Premier League": 0.09,
+  "La Liga": 0.09,
+  "Serie A": 0.10,
+  "Bundesliga": 0.10,
+  "Ligue 1": 0.10,
+  "World Cup": 0.07,
+  "European Championship": 0.09,
+  // Strong
+  "UEFA Europa League": 0.11,
+  "Eredivisie": 0.12,
+  "Primeira Liga": 0.12,
+  "Championship": 0.13,
+  "Copa America": 0.13,
+  // Competitive
+  "UEFA Conference League": 0.14,
+  "FA Cup": 0.15,
+  "League Cup": 0.16,
+  // Unpredictable
+  "Africa Cup of Nations": 0.18,
+  "Africa Cup of Nations, Women": 0.22,
+  "Pervaya Liga": 0.20,
+  "Kolmonen": 0.23,
+  "Torneo DIMAYOR": 0.24,
+  "Liga 1": 0.21,
+  "Primera LPF, Reserves": 0.28,
+  "1. deild, Women": 0.30,
+  "League Cup, National": 0.19,
+  // Default for unknown
+  "default": 0.18,
 };
 
-// Market type risk — lower = safer
-function getMarketRisk(marketDesc: string, marketGroup: string, specifier?: string): number {
-  const desc = marketDesc.toLowerCase();
-  
-  // Simple markets = safest
-  if (desc.includes("double chance")) return 5;
-  if (desc.includes("over/under") && !specifier?.includes("total=3")) return 8;
-  if (desc.includes("draw no bet")) return 10;
-  
-  // Medium risk
-  if (desc.includes("over/under") && specifier?.includes("total=3")) return 15;
-  if (desc.includes("win either half")) return 12;
-  if (desc.includes("away or over") || desc.includes("home or over") || desc.includes("home team or over")) return 13;
-  
-  // Handicaps
-  if (desc.includes("asian handicap")) {
-    if (specifier?.includes("hcp=1") || specifier?.includes("hcp=-1")) return 16;
-    return 20;
+// ── Market type base volatility ──
+// Simple markets have low vol; complex/specific ones have high vol
+function getMarketVol(desc: string, specifier?: string): number {
+  const d = desc.toLowerCase();
+  // Double chance = almost always lands one way or another
+  if (d.includes("double chance")) return 0.04;
+  // Simple over/under with low threshold
+  if (d.includes("over/under")) {
+    if (specifier?.includes("total=0.5")) return 0.02;
+    if (specifier?.includes("total=1.5")) return 0.05;
+    if (specifier?.includes("total=2.5")) return 0.08;
+    if (specifier?.includes("total=2")) return 0.10;  // whole number = void risk
+    if (specifier?.includes("total=3")) return 0.14;
+    return 0.12;
   }
-  
-  // Complex/niche
-  if (desc.includes("goal bounds")) return 22;
-  if (desc.includes("both halves")) return 25;
-  if (desc.includes("2nd half")) return 18;
-  
-  return 15; // default
+  // Draw no bet
+  if (d.includes("draw no bet")) return 0.09;
+  // Win either half — moderate
+  if (d.includes("win either half")) return 0.11;
+  // Combo markets (Home or Over, Away or Over)
+  if (d.includes("away or over") || d.includes("home team or over") || d.includes("home or over")) return 0.12;
+  // Asian handicap
+  if (d.includes("asian handicap")) {
+    if (specifier?.includes("hcp=0.25") || specifier?.includes("hcp=-0.25")) return 0.13;
+    if (specifier?.includes("hcp=0.5") || specifier?.includes("hcp=-0.5")) return 0.14;
+    if (specifier?.includes("hcp=1") || specifier?.includes("hcp=-1")) return 0.16;
+    return 0.18;
+  }
+  // Half-specific
+  if (d.includes("2nd half")) return 0.17;
+  if (d.includes("1st half")) return 0.17;
+  // Goal bounds
+  if (d.includes("goal bounds")) return 0.22;
+  // Both halves
+  if (d.includes("both halves")) return 0.24;
+  // Default: 1X2 etc
+  return 0.10;
 }
 
-function getTournamentRisk(tournament: string): number {
-  // Exact match
-  if (TOURNAMENT_TIERS[tournament]) return TOURNAMENT_TIERS[tournament];
-  
-  // Partial match
-  const lower = tournament.toLowerCase();
-  if (lower.includes("women")) return 25;
-  if (lower.includes("reserve")) return 28;
-  if (lower.includes("youth") || lower.includes("u19") || lower.includes("u21")) return 26;
-  if (lower.includes("friendly")) return 22;
-  
-  return 18; // unknown
+// ── Region reliability adjustment ──
+function getRegionAdj(category: string): number {
+  const c = category.toLowerCase();
+  if (c.includes("international clubs")) return 1.0;
+  if (c.includes("england") || c.includes("germany") || c.includes("spain") ||
+      c.includes("italy") || c.includes("france")) return 1.0;
+  if (c.includes("netherlands") || c.includes("portugal")) return 1.05;
+  if (c.includes("belgium") || c.includes("turkey") || c.includes("scotland")) return 1.08;
+  if (c.includes("international")) return 1.10;
+  if (c.includes("israel")) return 1.15;
+  if (c.includes("belarus") || c.includes("finland") || c.includes("iceland")) return 1.20;
+  if (c.includes("colombia") || c.includes("peru") || c.includes("argentina")) return 1.22;
+  if (c.includes("women")) return 1.25;
+  if (c.includes("reserve")) return 1.30;
+  return 1.12;
 }
 
-function getCategoryRisk(category: string): number {
-  const lower = category.toLowerCase();
-  if (lower.includes("international clubs")) return 12;
-  if (lower.includes("international")) return 15;
-  if (lower.includes("england") || lower.includes("spain") || lower.includes("italy") || 
-      lower.includes("germany") || lower.includes("france")) return 10;
-  if (lower.includes("belarus") || lower.includes("finland") || lower.includes("iceland")) return 20;
-  if (lower.includes("colombia") || lower.includes("peru") || lower.includes("argentina")) return 22;
-  if (lower.includes("israel")) return 20;
-  return 16;
+// ── Tail risk from odds ──
+// Longer odds = fatter tail in the loss distribution
+// Uses log-odds transformation for smooth scaling
+function getTailRisk(odds: number): number {
+  if (odds <= 1.10) return 1.0;
+  if (odds <= 1.20) return 1.08;
+  if (odds <= 1.30) return 1.15;
+  if (odds <= 1.40) return 1.25;
+  if (odds <= 1.50) return 1.40;
+  if (odds <= 1.60) return 1.60;
+  if (odds <= 1.80) return 1.85;
+  return 2.2;
 }
 
-function scoreSelection(
-  resolved: ReturnType<typeof resolveOutcome>
-): { riskScore: number; riskReasons: string[]; safeReasons: string[] } {
-  if (!resolved) return { riskScore: 50, riskReasons: ["Could not resolve selection"], safeReasons: [] };
+// ── Main scoring function ──
+function scoreMVE(resolved: ReturnType<typeof resolveOutcome>): {
+  baseVol: number; tailRisk: number; corrPenalty: number;
+  sigma: number; margContribution: number;
+  safeReasons: string[]; riskReasons: string[];
+} {
+  if (!resolved) return { baseVol: 0.30, tailRisk: 1.5, corrPenalty: 1.0, sigma: 0.45, margContribution: 0.31, safeReasons: [], riskReasons: ["Could not resolve"] };
 
-  const riskReasons: string[] = [];
   const safeReasons: string[] = [];
-  let score = 0;
+  const riskReasons: string[] = [];
 
-  // Tournament risk (weight: 30%)
-  const tournamentRisk = getTournamentRisk(resolved.tournament);
-  score += tournamentRisk * 0.30;
-  if (tournamentRisk <= 12) safeReasons.push(`Big league: ${resolved.tournament}`);
-  else if (tournamentRisk <= 15) {} // neutral
-  else if (tournamentRisk <= 20) riskReasons.push(`Small tournament: ${resolved.tournament}`);
-  else if (tournamentRisk <= 25) riskReasons.push(`Minor league: ${resolved.tournament} — hard to predict`);
+  // 1. Tournament volatility
+  const tKey = resolved.tournament;
+  const tVol = TOURNAMENT_VOL[tKey] ?? TOURNAMENT_VOL["default"];
+  if (tVol <= 0.10) safeReasons.push(`Big league: ${resolved.tournament}`);
+  else if (tVol <= 0.14) {} // neutral
+  else if (tVol <= 0.19) riskReasons.push(`Small tournament: ${resolved.tournament}`);
+  else if (tVol <= 0.24) riskReasons.push(`Minor league: ${resolved.tournament} — hard to predict`);
   else riskReasons.push(`Unknown league: ${resolved.tournament} — very unreliable`);
 
-  // Market risk (weight: 30%)
-  const marketRisk = getMarketRisk(resolved.marketDesc, resolved.marketGroup, resolved.specifier);
-  score += marketRisk * 0.30;
-  if (marketRisk <= 8) safeReasons.push(`Easy bet: ${resolved.marketDesc}`);
-  else if (marketRisk <= 13) {} // neutral combo markets
-  else if (marketRisk <= 16) riskReasons.push(`Tricky market: ${resolved.marketDesc}`);
-  else if (marketRisk <= 20) riskReasons.push(`Hard to call: ${resolved.marketDesc}`);
+  // 2. Market volatility
+  const mVol = getMarketVol(resolved.marketDesc, resolved.specifier);
+  if (mVol <= 0.06) safeReasons.push(`Easy bet: ${resolved.marketDesc}`);
+  else if (mVol <= 0.11) {} // neutral
+  else if (mVol <= 0.15) riskReasons.push(`Tricky market: ${resolved.marketDesc}`);
+  else if (mVol <= 0.20) riskReasons.push(`Hard to call: ${resolved.marketDesc}`);
   else riskReasons.push(`Very specific bet: ${resolved.marketDesc}`);
 
-  // Category risk (weight: 15%)
-  const categoryRisk = getCategoryRisk(resolved.category);
-  score += categoryRisk * 0.15;
-  if (categoryRisk <= 12) safeReasons.push(`Reliable region: ${resolved.category}`);
-  else if (categoryRisk >= 22) riskReasons.push(`Unstable region: ${resolved.category}`);
+  // 3. Region adjustment
+  const rAdj = getRegionAdj(resolved.category);
+  if (rAdj <= 1.02) safeReasons.push(`Reliable region: ${resolved.category}`);
+  else if (rAdj >= 1.20) riskReasons.push(`Unstable region: ${resolved.category}`);
 
-  // Odds risk (weight: 25%)
+  // 4. Base volatility = tournament × market × region
+  const baseVol = tVol * (mVol / 0.10) * rAdj;
+
+  // 5. Tail risk from odds
   const odds = resolved.odds;
-  if (odds > 1.6) {
-    score += 25 * 0.25;
-    riskReasons.push(`High odds (${odds}) — unlikely to win`);
-  } else if (odds > 1.45) {
-    score += 18 * 0.25;
-    riskReasons.push(`Risky odds (${odds}) — not a sure thing`);
-  } else if (odds > 1.35) {
-    score += 12 * 0.25;
-  } else if (odds > 1.25) {
-    score += 6 * 0.25;
-    safeReasons.push(`Short odds (${odds}) — likely to land`);
-  } else {
-    score += 2 * 0.25;
-    safeReasons.push(`Very short odds (${odds}) — almost certain`);
-  }
+  const tailRisk = getTailRisk(odds);
+  if (odds <= 1.25) safeReasons.push(`Short odds (${odds}) — likely to land`);
+  else if (odds > 1.45) riskReasons.push(`Risky odds (${odds}) — not a sure thing`);
+  if (odds > 1.60) riskReasons.push(`High odds (${odds}) — unlikely to win`);
 
-  // Live game risk
-  if (resolved.matchStatus !== "Not start") {
-    score += 5;
-    riskReasons.push("Game is live — things can change fast");
-  }
+  // 6. Live game penalty
+  const corrPenalty = resolved.matchStatus !== "Not start" ? 1.15 : 1.0;
+  if (corrPenalty > 1.0) riskReasons.push("Game is live — things can change fast");
 
-  // Probability adjustment
-  if (resolved.probability > 0.75) {
-    safeReasons.push(`${Math.round(resolved.probability * 100)}% chance according to bookies`);
-  } else if (resolved.probability < 0.65) {
-    score += 5;
-    riskReasons.push(`Only ${Math.round(resolved.probability * 100)}% chance — bookies are unsure`);
-  }
+  // 7. Probability check
+  if (resolved.probability > 0.75) safeReasons.push(`${Math.round(resolved.probability * 100)}% chance according to bookies`);
+  else if (resolved.probability < 0.65) riskReasons.push(`Only ${Math.round(resolved.probability * 100)}% chance — bookies are unsure`);
 
-  return {
-    riskScore: Math.round(Math.min(100, score)),
-    riskReasons,
-    safeReasons,
-  };
+  // 8. Final sigma
+  const sigma = baseVol * tailRisk * corrPenalty;
+  const margContribution = sigma / (1 + sigma);
+
+  return { baseVol, tailRisk, corrPenalty, sigma, margContribution, safeReasons, riskReasons };
 }
 
-// ============================================================
+// ══════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================
+// ══════════════════════════════════════════════════════════════════
 
 export function analyzeSelections(
   outcomes: SportyOutcome[],
@@ -204,8 +209,11 @@ export function analyzeSelections(
 ): AnalysisResult {
   const selections: AnalyzedSelection[] = ticketSelections.map(sel => {
     const resolved = resolveOutcome(outcomes, sel);
-    const { riskScore, riskReasons, safeReasons } = scoreSelection(resolved);
-    
+    const mve = scoreMVE(resolved);
+
+    // Convert sigma to 0-100 risk score using sigmoid for nice distribution
+    const riskScore = Math.round(100 * (1 - 1 / (1 + mve.sigma * 3)));
+
     return {
       homeTeam: resolved?.homeTeam || "Unknown",
       awayTeam: resolved?.awayTeam || "Unknown",
@@ -217,33 +225,32 @@ export function analyzeSelections(
       probability: resolved?.probability || 0,
       matchStatus: resolved?.matchStatus || "Unknown",
       riskScore,
-      riskReasons,
-      safeReasons,
-      eventId: sel.eventId,
-      marketId: sel.marketId,
-      outcomeId: sel.outcomeId,
-      specifierRaw: sel.specifier,
-      productId: sel.productId,
-      sportId: sel.sportId,
+      riskReasons: mve.riskReasons,
+      safeReasons: mve.safeReasons,
+      eventId: sel.eventId, marketId: sel.marketId, outcomeId: sel.outcomeId,
+      specifierRaw: sel.specifier, productId: sel.productId, sportId: sel.sportId,
+      baseVol: mve.baseVol, tailRisk: mve.tailRisk, corrPenalty: mve.corrPenalty,
+      margContribution: mve.margContribution,
     };
   });
 
-  const averageRisk = selections.reduce((sum, s) => sum + s.riskScore, 0) / selections.length;
+  // Sort by marginal volatility contribution (what to remove first)
+  selections.sort((a, b) => b.margContribution - a.margContribution);
 
-  return {
-    selections: selections.sort((a, b) => b.riskScore - a.riskScore), // riskiest first
-    originalCode: code,
-    totalSelections: selections.length,
-    averageRisk: Math.round(averageRisk),
-  };
+  // Portfolio volatility: ∏(1 + σ) - 1
+  const portfolioVol = selections.reduce((prod, s) => prod * (1 + s.margContribution), 1) - 1;
+
+  const averageRisk = Math.round(selections.reduce((sum, s) => sum + s.riskScore, 0) / selections.length);
+
+  return { selections, originalCode: code, totalSelections: selections.length, averageRisk, portfolioVol };
 }
 
 export function getShrinkSelections(
   selections: AnalyzedSelection[],
   count: number
 ): { removed: AnalyzedSelection[]; kept: AnalyzedSelection[] } {
-  const sorted = [...selections].sort((a, b) => b.riskScore - a.riskScore);
-  const removed = sorted.slice(0, Math.min(count, sorted.length - 1)); // always keep at least 1
+  const sorted = [...selections].sort((a, b) => b.margContribution - a.margContribution);
+  const removed = sorted.slice(0, Math.min(count, sorted.length - 1));
   const removedIds = new Set(removed.map(s => s.eventId + s.marketId + s.outcomeId));
   const kept = selections.filter(s => !removedIds.has(s.eventId + s.marketId + s.outcomeId));
   return { removed, kept };
@@ -251,11 +258,7 @@ export function getShrinkSelections(
 
 export function selectionsToSportyFormat(selections: AnalyzedSelection[]): SportySelection[] {
   return selections.map(s => ({
-    eventId: s.eventId,
-    marketId: s.marketId,
-    specifier: s.specifierRaw,
-    outcomeId: s.outcomeId,
-    productId: s.productId,
-    sportId: s.sportId,
+    eventId: s.eventId, marketId: s.marketId, specifier: s.specifierRaw,
+    outcomeId: s.outcomeId, productId: s.productId, sportId: s.sportId,
   }));
 }

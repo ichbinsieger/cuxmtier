@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
       originalCode: code,
       totalSelections: analysis.totalSelections,
       averageRisk: analysis.averageRisk,
+      portfolioVol: Math.round(analysis.portfolioVol * 100),
       selections: analysis.selections.map(s => ({
         homeTeam: s.homeTeam, awayTeam: s.awayTeam, tournament: s.tournament,
         marketDesc: s.marketDesc, pickDesc: s.pickDesc, odds: s.odds,
