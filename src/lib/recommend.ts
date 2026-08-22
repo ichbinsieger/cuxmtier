@@ -9,6 +9,8 @@
 //   5. Create SportyBet booking codes via the share API
 
 import { SportySelection, createBookCode } from "./sportybet";
+import { scoreDraw, findTeam, getTeamForm, getH2HDrawRate } from "./drawModel";
+import type { ApiTeam, TeamForm } from "./drawModel";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -445,17 +447,29 @@ export async function getRecommendations(): Promise<RecommendedSlip[]> {
 //
 // Builds a single high-risk, high-reward slip made entirely of 1X2 "Draw"
 // outcomes. Each draw is typically ~3.0–4.0 odds, so 5–7 draws compound to
-// ~1000x. Picks are ranked by draw probability × league weight, then a greedy
-// builder selects draws until the combined odds land in the target band.
+// ~1000x. Draws are ranked by a multi-factor model (see drawModel.ts) rather
+// than raw bookmaker probability.
 
 const DRAW_TARGET = 1000;
 const DRAW_MIN_ODDS = 2.8;
 const DRAW_MAX_ODDS = 4.5;
+// How many candidate matches to enrich with H2H + team-character data.
+// API-Football free plan = 10 req/min + 100/day, so keep this modest and
+// rely on the persistent cache (drawModel.ts) for repeat runs.
+const DRAW_ENRICH_LIMIT = 10;
 
-async function collectDrawPicks(): Promise<SafePick[]> {
+interface DrawCandidate {
+  pick: SafePick;
+  country: string;
+  homeProb: number; // P(home win) from 1X2
+  awayProb: number; // P(away win) from 1X2
+  drawProb: number; // P(draw) from 1X2
+}
+
+async function collectDrawPicks(): Promise<DrawCandidate[]> {
   // Draws only exist on football 1X2 markets, so scan football alone.
   const groups = await fetchSportEvents("sr:sport:1");
-  const draws: SafePick[] = [];
+  const draws: DrawCandidate[] = [];
 
   for (const tournament of groups) {
     for (const event of tournament.events) {
@@ -467,20 +481,32 @@ async function collectDrawPicks(): Promise<SafePick[]> {
 
       for (const market of event.markets) {
         if (market.desc.toLowerCase() !== "1x2") continue;
+
+        // Extract the three 1X2 probabilities (home / draw / away)
+        let homeProb = 0, awayProb = 0, drawProb = 0, drawOutcome = null;
         for (const outcome of market.outcomes) {
-          if (outcome.desc.toLowerCase() !== "draw") continue;
-          const odds = parseFloat(outcome.odds);
-          if (odds < DRAW_MIN_ODDS || odds > DRAW_MAX_ODDS) continue;
+          const p = parseFloat(outcome.probability || "0");
+          const d = outcome.desc.toLowerCase();
+          if (d === "home" || d === "1") homeProb = p;
+          else if (d === "away" || d === "2") awayProb = p;
+          else if (d === "draw" || d === "x") { drawProb = p; drawOutcome = outcome; }
+        }
 
-          const prob = parseFloat(outcome.probability || "0");
-          // Draw "safety" = draw probability × league quality. Market is
-          // always 1X2 so no market-favorability factor needed.
-          const safety = prob * leagueWeight(league, country);
+        if (!drawOutcome) continue;
+        const odds = parseFloat(drawOutcome.odds);
+        if (odds < DRAW_MIN_ODDS || odds > DRAW_MAX_ODDS) continue;
 
-          draws.push({
+        const safety = drawProb * leagueWeight(league, country);
+
+        draws.push({
+          homeProb,
+          awayProb,
+          drawProb,
+          country,
+          pick: {
             eventId: event.eventId,
             marketId: market.id,
-            outcomeId: outcome.id,
+            outcomeId: drawOutcome.id,
             specifier: market.specifier || undefined,
             productId: market.product,
             sportId: event.sport.id,
@@ -488,17 +514,18 @@ async function collectDrawPicks(): Promise<SafePick[]> {
             awayTeam: event.awayTeamName,
             tournament: league,
             marketDesc: market.desc,
-            pickDesc: outcome.desc,
+            pickDesc: drawOutcome.desc,
             odds,
-            probability: prob,
+            probability: drawProb,
             safetyScore: safety,
-          });
-        }
+          },
+        });
       }
     }
   }
 
-  draws.sort((a, b) => b.safetyScore - a.safetyScore);
+  // Sort by raw draw probability first (cheap pre-filter)
+  draws.sort((a, b) => b.drawProb - a.drawProb);
   return draws;
 }
 
@@ -535,10 +562,62 @@ function buildDrawSlip(draws: SafePick[]): SafePick[] | null {
 }
 
 export async function getDrawRecommendation(): Promise<RecommendedSlip | null> {
-  const draws = await collectDrawPicks();
-  if (draws.length < 5) return null;
+  const candidates = await collectDrawPicks();
+  if (candidates.length < 5) return null;
 
-  const slip = buildDrawSlip(draws);
+  // Enrich the top candidates with H2H + team-character data (API-Football).
+  // In-run Maps dedupe repeated teams; drawModel.ts adds a persistent DB cache.
+  const teamCache = new Map<string, { team: ApiTeam | null }>();
+  const formCache = new Map<number, TeamForm | null>();
+  const h2hCache = new Map<string, number | null>();
+
+  const enriched: SafePick[] = [];
+
+  for (const c of candidates.slice(0, DRAW_ENRICH_LIMIT)) {
+    const { pick } = c;
+    try {
+      // Resolve both teams (country hint disambiguates e.g. "Arsenal" England
+      // vs Argentina), then their character + head-to-head draw history.
+      const homeTeam = await findTeamCached(pick.homeTeam, c.country, teamCache);
+      const awayTeam = await findTeamCached(pick.awayTeam, c.country, teamCache);
+
+      const homeForm = homeTeam ? await formCached(homeTeam.id, formCache) : null;
+      const awayForm = awayTeam ? await formCached(awayTeam.id, formCache) : null;
+
+      const h2h = homeTeam && awayTeam
+        ? await h2hCached(homeTeam.id, awayTeam.id, h2hCache)
+        : null;
+
+      // Parity from bookmaker 1X2 probabilities: |P(home) − P(away)|
+      const gap = Math.abs(c.homeProb - c.awayProb);
+
+      const score = scoreDraw(
+        pick.probability,
+        pick.tournament,
+        homeForm,
+        awayForm,
+        { rank: Math.round(gap * 20) }, // approximate rank gap for parity weighting
+        null,
+        h2h
+      );
+
+      // Store the model score on the pick for transparency
+      pick.safetyScore = score.adjustedProbability;
+      pick.probability = score.adjustedProbability;
+      enriched.push(pick);
+    } catch (e) {
+      console.error("Draw enrich failed for", pick.homeTeam, "vs", pick.awayTeam, e);
+      enriched.push(pick); // fall back to bookmaker-only pick
+    }
+  }
+
+  // If enrichment failed entirely, fall back to raw candidates
+  const ranked = enriched.length > 0 ? enriched : candidates.map(c => c.pick);
+
+  // Sort by model-adjusted draw probability
+  ranked.sort((a, b) => b.safetyScore - a.safetyScore);
+
+  const slip = buildDrawSlip(ranked);
   if (!slip) return null;
 
   try {
@@ -549,4 +628,40 @@ export async function getDrawRecommendation(): Promise<RecommendedSlip | null> {
     console.error("Failed to create draw code:", e);
     return null;
   }
+}
+
+// ── Team lookup helpers (cached) ───────────────────────────────────
+
+async function findTeamCached(
+  name: string,
+  countryHint: string,
+  cache: Map<string, { team: ApiTeam | null }>
+): Promise<ApiTeam | null> {
+  const key = `${name}||${countryHint}`;
+  if (cache.has(key)) return cache.get(key)!.team;
+  const team = await findTeam(name, countryHint);
+  cache.set(key, { team });
+  return team;
+}
+
+async function formCached(
+  teamId: number,
+  cache: Map<number, TeamForm | null>
+): Promise<TeamForm | null> {
+  if (cache.has(teamId)) return cache.get(teamId)!;
+  const form = await getTeamForm(teamId);
+  cache.set(teamId, form);
+  return form;
+}
+
+async function h2hCached(
+  homeId: number,
+  awayId: number,
+  cache: Map<string, number | null>
+): Promise<number | null> {
+  const key = `${homeId}:${awayId}`;
+  if (cache.has(key)) return cache.get(key)!;
+  const rate = await getH2HDrawRate(homeId, awayId);
+  cache.set(key, rate);
+  return rate;
 }

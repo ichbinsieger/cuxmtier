@@ -42,5 +42,14 @@ export async function ensureSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_recommendations_created ON recommendations (created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_recommendations_batch ON recommendations (batch_id);
     ALTER TABLE recommendations ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'safe';
+
+    -- Persistent cache for API-Football enrichment (team ids, form, H2H).
+    -- Lets the 4-hourly tracker stay under the free plan's 100 req/day.
+    CREATE TABLE IF NOT EXISTS football_cache (
+      cache_key  TEXT PRIMARY KEY,
+      value      JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_football_cache_updated ON football_cache (updated_at);
   `);
 }
