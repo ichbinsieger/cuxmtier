@@ -1,4 +1,5 @@
 import { SportySelection, SportyOutcome, resolveOutcome } from "./sportybet";
+import { findPrior, blendProbability, expectedValue, type PriorEntry } from "./priors";
 
 export interface AnalyzedSelection {
   homeTeam: string; awayTeam: string; tournament: string;
@@ -11,9 +12,15 @@ export interface AnalyzedSelection {
   baseVol: number; tailRisk: number; corrPenalty: number;
   sigma: number; margContribution: number;
   // Kelly
-  kellyFraction: number; kellyLabel: string; // "bet", "skip", "strong bet"
+  kellyFraction: number; kellyLabel: string;
   // Individual
   failProb: number;
+  // EV% — primary metric
+  evPercent: number;
+  adjustedProbability: number;
+  priorUsed: PriorEntry | null;
+  // Best alternative
+  bestAlternative: BestAlternative | null;
 }
 
 export interface AnalysisResult {
@@ -21,6 +28,8 @@ export interface AnalysisResult {
   originalCode: string; totalSelections: number; averageRisk: number;
   portfolioVol: number; failureProbability: number;
   correlationWarnings: string[];
+  hedgeWarnings: string[];
+  drawdownRisk: { loseFirstN: number; threshold: number; percent: number } | null;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -107,9 +116,26 @@ function computeKelly(odds: number, probability: number): { fraction: number; la
 
 // ── Main scoring ──
 function scorePick(resolved: ReturnType<typeof resolveOutcome>) {
-  if (!resolved) return { sigma: 0.45, marg: 0.31, safeReasons: [], riskReasons: [], kellyF: 0, kellyL: "skip", failP: 0.5 };
+  if (!resolved) return {
+    sigma: 0.45, marg: 0.31, safeReasons: [], riskReasons: [],
+    kellyF: 0, kellyL: "skip", failP: 0.5,
+    baseVol: 0.18, tailRisk: 2.2, corrPenalty: 1.0,
+    evPercent: -100, adjProb: 0, prior: null,
+  };
 
   const safe: string[] = [], risk: string[] = [];
+
+  // ── Historical prior + Bayesian blend ──
+  const prior = findPrior(resolved.tournament, resolved.marketDesc, resolved.specifier);
+  const bookmakerProb = resolved.probability || (1 / resolved.odds);
+  const adjProb = prior ? blendProbability(bookmakerProb, prior) : bookmakerProb;
+  const evPercent = Math.round((resolved.odds * adjProb - 1) * 100);
+
+  if (prior) {
+    safe.push(`Prior: ${Math.round(prior.historicalHitRate * 100)}% hit (${prior.sampleSize} games)`);
+    if (adjProb > bookmakerProb + 0.03) safe.push(`Adjusted ↑ +${Math.round((adjProb - bookmakerProb) * 100)}% vs bookmaker`);
+    else if (adjProb < bookmakerProb - 0.03) risk.push(`Adjusted ↓ ${Math.round((adjProb - bookmakerProb) * 100)}% vs bookmaker`);
+  }
 
   const tKey = resolved.tournament;
   const tVol = TOURNAMENT_VOL[tKey] ?? TOURNAMENT_VOL["default"];
@@ -134,18 +160,19 @@ function scorePick(resolved: ReturnType<typeof resolveOutcome>) {
   const corrPenalty = resolved.matchStatus !== "Not start" ? 1.15 : 1.0;
   if (corrPenalty > 1.0) risk.push("Game is live");
 
-  if (resolved.probability > 0.75) safe.push(`${Math.round(resolved.probability * 100)}% chance`);
-  else if (resolved.probability < 0.65) risk.push(`Only ${Math.round(resolved.probability * 100)}% chance`);
+  if (adjProb > 0.75) safe.push(`${Math.round(adjProb * 100)}% chance`);
+  else if (adjProb < 0.65) risk.push(`Only ${Math.round(adjProb * 100)}% chance`);
 
   const sigma = baseVol * tailRisk * corrPenalty;
-  const kelly = computeKelly(odds, resolved.probability);
-  const failP = 1 - resolved.probability;
+  const kelly = computeKelly(odds, adjProb);
+  const failP = 1 - adjProb;
 
   return {
     sigma, marg: sigma / (1 + sigma),
     safeReasons: safe, riskReasons: risk,
     kellyF: kelly.fraction, kellyL: kelly.label,
     baseVol, tailRisk, corrPenalty, failP,
+    evPercent, adjProb, prior,
   };
 }
 
@@ -182,8 +209,155 @@ function detectCorrelations(selections: AnalyzedSelection[]): { selections: Anal
 }
 
 // ═══════════════════════════════════════════════════════════════
+// HEDGE / ARBITRAGE DETECTION
+// ═══════════════════════════════════════════════════════════════
+
+/** Pairs of outcomes that are contradictory (can't both win) */
+const CONTRADICTIONS: Array<{ a: RegExp; b: RegExp; label: string }> = [
+  // 1X2 opposites
+  { a: /\bhome\b/i, b: /\baway\b/i, label: "Home Win + Away Win on same game — one will always lose" },
+  { a: /\bhome\b/i, b: /\bdraw\b/i, label: "Home Win + Draw on same game — can't both hit" },
+  { a: /\baway\b/i, b: /\bdraw\b/i, label: "Away Win + Draw on same game — can't both hit" },
+  // Over/Under opposites
+  { a: /\bover\b/i, b: /\bunder\b/i, label: "Over + Under on same market — contradictory picks" },
+  // Home Win vs Double Chance (Away or Draw)
+  { a: /\bhome\b/i, b: /\baway or draw\b/i, label: "Home Win + Away/Draw covers all outcomes — waste of a pick" },
+  { a: /\baway\b/i, b: /\bhome or draw\b/i, label: "Away Win + Home/Draw covers all outcomes — waste of a pick" },
+  // Both Teams to Score vs No
+  { a: /\byes\b/i, b: /\bno\b/i, label: "BTTS Yes + No on same game — can't both hit" },
+];
+
+function detectHedges(selections: AnalyzedSelection[]): string[] {
+  const warnings: string[] = [];
+  const eventGroups = new Map<string, AnalyzedSelection[]>();
+
+  for (const s of selections) {
+    const group = eventGroups.get(s.eventId) || [];
+    group.push(s);
+    eventGroups.set(s.eventId, group);
+  }
+
+  for (const [, group] of Array.from(eventGroups.entries())) {
+    if (group.length < 2) continue;
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = group[i], b = group[j];
+        // Must be different markets or different outcomes
+        if (a.marketId === b.marketId && a.outcomeId === b.outcomeId) continue;
+        for (const rule of CONTRADICTIONS) {
+          const aMatch = rule.a.test(a.pickDesc) || rule.a.test(a.marketDesc);
+          const bMatch = rule.b.test(b.pickDesc) || rule.b.test(b.marketDesc);
+          if (aMatch && bMatch) {
+            const teams = `${a.homeTeam} vs ${a.awayTeam}`;
+            warnings.push(`⚠️ ${teams}: ${rule.label}`);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return warnings;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAWDOWN RISK
+// ═══════════════════════════════════════════════════════════════
+
+/** Probability you lose the first N picks (all fail before any win).
+ *  More useful than portfolio vol — tells you how bad a start could be. */
+function computeDrawdown(selections: AnalyzedSelection[]): { loseFirstN: number; threshold: number; percent: number } | null {
+  if (selections.length === 0) return null;
+
+  // Find N where chance of losing first N drops below 50% (the breakeven threshold)
+  let threshold = 1;
+  for (let n = 1; n <= selections.length; n++) {
+    let probAllLose = 1;
+    for (let i = 0; i < n; i++) {
+      probAllLose *= (1 - selections[i].adjustedProbability);
+    }
+    if (probAllLose < 0.5) {
+      threshold = n;
+      break;
+    }
+  }
+
+  // Chance of losing first 3 (or all if less than 3)
+  const checkN = Math.min(3, selections.length);
+  let probLoseFirstN = 1;
+  for (let i = 0; i < checkN; i++) {
+    probLoseFirstN *= (1 - selections[i].adjustedProbability);
+  }
+
+  return {
+    loseFirstN: checkN,
+    threshold,
+    percent: Math.round(probLoseFirstN * 100),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PUBLIC API
 // ═══════════════════════════════════════════════════════════════
+
+/** Best alternative pick — lowest sigma across all markets for an event */
+export interface BestAlternative {
+  marketDesc: string; pickDesc: string; odds: number;
+  sigma: number; riskScore: number; riskReasons: string[]; safeReasons: string[];
+  eventId: string; marketId: string; outcomeId: string;
+  specifierRaw?: string; productId: number; sportId: string;
+}
+
+/** Scan all markets on an event and return the lowest-sigma pick */
+export function findBestPickForEvent(
+  eventOutcome: SportyOutcome,
+  currentOutcomeId: string
+): BestAlternative | null {
+  let best: { resolved: NonNullable<ReturnType<typeof resolveOutcome>>; mve: ReturnType<typeof scorePick> } | null = null;
+  let bestScore = Infinity;
+
+  for (const market of eventOutcome.markets) {
+    for (const outcome of market.outcomes) {
+      // Skip the currently selected pick
+      if (outcome.id === currentOutcomeId) continue;
+
+      const sel: SportySelection = {
+        eventId: eventOutcome.eventId,
+        marketId: market.id,
+        specifier: market.specifier,
+        outcomeId: outcome.id,
+        productId: market.product,
+        sportId: eventOutcome.sport.id,
+      };
+
+      const resolved = resolveOutcome([eventOutcome], sel);
+      if (!resolved) continue;
+      const mve = scorePick(resolved);
+      if (mve.sigma < bestScore) {
+        bestScore = mve.sigma;
+        best = { resolved, mve };
+      }
+    }
+  }
+
+  if (!best) return null;
+
+  return {
+    marketDesc: best.resolved.marketDesc,
+    pickDesc: best.resolved.pickDesc,
+    odds: best.resolved.odds,
+    sigma: best.mve.sigma,
+    riskScore: Math.round(100 * (1 - 1 / (1 + best.mve.sigma * 3))),
+    riskReasons: best.mve.riskReasons,
+    safeReasons: best.mve.safeReasons,
+    eventId: best.resolved.eventId,
+    marketId: best.resolved.marketId,
+    outcomeId: best.resolved.outcomeId,
+    specifierRaw: best.resolved.specifierRaw,
+    productId: best.resolved.productId,
+    sportId: best.resolved.sportId,
+  };
+}
 
 export function analyzeSelections(
   outcomes: SportyOutcome[],
@@ -193,6 +367,9 @@ export function analyzeSelections(
   let selections: AnalyzedSelection[] = ticketSelections.map(sel => {
     const resolved = resolveOutcome(outcomes, sel);
     const mve = scorePick(resolved);
+    // Find best alternative for this event
+    const eventOutcome = outcomes.find(o => o.eventId === sel.eventId);
+    const bestAlt = eventOutcome ? findBestPickForEvent(eventOutcome, sel.outcomeId) : null;
     return {
       homeTeam: resolved?.homeTeam || "?", awayTeam: resolved?.awayTeam || "?",
       tournament: resolved?.tournament || "?", category: resolved?.category || "?",
@@ -207,6 +384,10 @@ export function analyzeSelections(
       sigma: mve.sigma, margContribution: mve.marg,
       kellyFraction: mve.kellyF, kellyLabel: mve.kellyL,
       failProb: mve.failP,
+      evPercent: mve.evPercent,
+      adjustedProbability: mve.adjProb,
+      priorUsed: mve.prior,
+      bestAlternative: bestAlt,
     };
   });
 
@@ -220,11 +401,15 @@ export function analyzeSelections(
   const portfolioVol = selections.reduce((p, s) => p * (1 + s.sigma), 1) - 1;
   const failureProbability = 1 - selections.reduce((p, s) => p * (1 - s.failProb), 1);
   const avgRisk = Math.round(selections.reduce((s, x) => s + x.riskScore, 0) / selections.length);
+  const hedgeWarnings = detectHedges(selections);
+  const drawdownRisk = computeDrawdown(selections);
 
   return {
     selections, originalCode: code, totalSelections: selections.length,
     averageRisk: avgRisk, portfolioVol, failureProbability,
     correlationWarnings: corrResult.warnings,
+    hedgeWarnings,
+    drawdownRisk,
   };
 }
 

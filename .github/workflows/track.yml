@@ -17,7 +17,7 @@ jobs:
         run: |
           code=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            https://cuxmtier.vercel.app/api/cron)
+            https://cuxmtier.vercel.app/api/cron?force=1)
           echo "HTTP $code"
           cat /tmp/resp.json
           if [ "$code" != "200" ]; then exit 1; fi

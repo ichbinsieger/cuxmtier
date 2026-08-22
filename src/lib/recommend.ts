@@ -440,3 +440,113 @@ export async function getRecommendations(): Promise<RecommendedSlip[]> {
 
   return results;
 }
+
+// ── Risky Draw Accumulator (target ~1000x) ────────────────────────
+//
+// Builds a single high-risk, high-reward slip made entirely of 1X2 "Draw"
+// outcomes. Each draw is typically ~3.0–4.0 odds, so 5–7 draws compound to
+// ~1000x. Picks are ranked by draw probability × league weight, then a greedy
+// builder selects draws until the combined odds land in the target band.
+
+const DRAW_TARGET = 1000;
+const DRAW_MIN_ODDS = 2.8;
+const DRAW_MAX_ODDS = 4.5;
+
+async function collectDrawPicks(): Promise<SafePick[]> {
+  // Draws only exist on football 1X2 markets, so scan football alone.
+  const groups = await fetchSportEvents("sr:sport:1");
+  const draws: SafePick[] = [];
+
+  for (const tournament of groups) {
+    for (const event of tournament.events) {
+      if (event.matchStatus !== "Not start") continue;
+
+      const league = event.sport.category.tournament.name;
+      const country = event.sport.category.name;
+      if (leagueWeight(league, country) === 0) continue; // skip simulated
+
+      for (const market of event.markets) {
+        if (market.desc.toLowerCase() !== "1x2") continue;
+        for (const outcome of market.outcomes) {
+          if (outcome.desc.toLowerCase() !== "draw") continue;
+          const odds = parseFloat(outcome.odds);
+          if (odds < DRAW_MIN_ODDS || odds > DRAW_MAX_ODDS) continue;
+
+          const prob = parseFloat(outcome.probability || "0");
+          // Draw "safety" = draw probability × league quality. Market is
+          // always 1X2 so no market-favorability factor needed.
+          const safety = prob * leagueWeight(league, country);
+
+          draws.push({
+            eventId: event.eventId,
+            marketId: market.id,
+            outcomeId: outcome.id,
+            specifier: market.specifier || undefined,
+            productId: market.product,
+            sportId: event.sport.id,
+            homeTeam: event.homeTeamName,
+            awayTeam: event.awayTeamName,
+            tournament: league,
+            marketDesc: market.desc,
+            pickDesc: outcome.desc,
+            odds,
+            probability: prob,
+            safetyScore: safety,
+          });
+        }
+      }
+    }
+  }
+
+  draws.sort((a, b) => b.safetyScore - a.safetyScore);
+  return draws;
+}
+
+function buildDrawSlip(draws: SafePick[]): SafePick[] | null {
+  // Deduplicate by event, keep highest-safety draw per match
+  const bestPerEvent = new Map<string, SafePick>();
+  for (const d of draws) {
+    const existing = bestPerEvent.get(d.eventId);
+    if (!existing || d.safetyScore > existing.safetyScore) bestPerEvent.set(d.eventId, d);
+  }
+  const unique = Array.from(bestPerEvent.values());
+
+  // Target ~1000x combined odds. Draws are ~2.8–4.5 each, so 6 draws lands
+  // in the ~700–1500x sweet spot. Accumulate until combined odds reach the
+  // target band (or we hit 7 games), without overshooting past ~1500x.
+  const slip: SafePick[] = [];
+  let combined = 1;
+
+  for (const d of unique) {
+    if (slip.length >= 7) break;
+    const next = combined * d.odds;
+    // Once we have a playable slip, skip draws that would overshoot the band
+    if (slip.length >= 5 && next > 1500) continue;
+
+    slip.push(d);
+    combined = next;
+
+    if (slip.length >= 5 && combined >= 700) break;
+  }
+
+  if (slip.length < 5) return null;
+  if (combined < 400) return null; // too far from 1000x
+  return slip;
+}
+
+export async function getDrawRecommendation(): Promise<RecommendedSlip | null> {
+  const draws = await collectDrawPicks();
+  if (draws.length < 5) return null;
+
+  const slip = buildDrawSlip(draws);
+  if (!slip) return null;
+
+  try {
+    const code = await createBookCode(slip.map(toSportySelection));
+    const actualOdds = Math.round(slip.reduce((p, s) => p * s.odds, 1) * 100) / 100;
+    return { targetOdds: DRAW_TARGET, actualOdds, code, picks: slip };
+  } catch (e) {
+    console.error("Failed to create draw code:", e);
+    return null;
+  }
+}

@@ -41,6 +41,7 @@ export interface SportyOutcome {
       odds: string;
       probability: string;
       desc: string;
+      isWinning?: boolean | number;
     }>;
   }>;
   bookingStatus: string;

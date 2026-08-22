@@ -6,11 +6,12 @@ import { getSafeBets, safeBetToSelection } from "@/lib/safeBets";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { code, action, count, removeIds } = body as {
+    const { code, action, count, removeIds, selections } = body as {
       code: string;
-      action: "analyze" | "shrink" | "add" | "custom";
+      action: "analyze" | "shrink" | "add" | "custom" | "rebuild" | "check";
       count?: number;
       removeIds?: string[];
+      selections?: Array<{ eventId: string; marketId: string; outcomeId: string; specifier?: string; productId: number; sportId: string }>;
     };
 
     if (!code && action !== "add") {
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest) {
         portfolioVol: Math.round(analysis.portfolioVol * 100),
         failureProbability: Math.round(analysis.failureProbability * 100),
         correlationWarnings: analysis.correlationWarnings,
+        hedgeWarnings: analysis.hedgeWarnings,
+        drawdownRisk: analysis.drawdownRisk,
         selections: analysis.selections.map(s => ({
           homeTeam: s.homeTeam, awayTeam: s.awayTeam, tournament: s.tournament,
           marketDesc: s.marketDesc, pickDesc: s.pickDesc, odds: s.odds,
@@ -37,6 +40,10 @@ export async function POST(req: NextRequest) {
           specifierRaw: s.specifierRaw, productId: s.productId, sportId: s.sportId,
           sigma: s.sigma, failProb: s.failProb,
           kellyFraction: s.kellyFraction, kellyLabel: s.kellyLabel,
+          evPercent: s.evPercent,
+          adjustedProbability: s.adjustedProbability,
+          priorUsed: s.priorUsed,
+          bestAlternative: s.bestAlternative,
         })),
       });
     }
@@ -85,6 +92,28 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // ── REBUILD (from manual swaps/removals) ──
+    if (action === "rebuild" && selections && selections.length > 0) {
+      const ticket = await fetchBookCode(code!);
+      const analysis = analyzeSelections(ticket.outcomes, selections.map(s => ({
+        eventId: s.eventId, marketId: s.marketId, outcomeId: s.outcomeId,
+        specifier: s.specifier, productId: s.productId, sportId: s.sportId,
+      })), code!);
+      const newCode = await createBookCode(selections.map(s => ({
+        eventId: s.eventId, marketId: s.marketId, outcomeId: s.outcomeId,
+        specifier: s.specifier, productId: s.productId, sportId: s.sportId,
+      })));
+      const metrics = recomputePortfolio(analysis.selections);
+      return NextResponse.json({
+        originalCode: code, newCode,
+        totalOriginal: ticket.ticket.selections.length, totalNew: selections.length,
+        portfolioVolBefore: 0,
+        portfolioVolAfter: Math.round(metrics.portfolioVol * 100),
+        failureProbBefore: 0,
+        failureProbAfter: Math.round(metrics.failureProbability * 100),
+      });
+    }
+
     // ── ADD ──
     if (action === "add") {
       const ticket = await fetchBookCode(code!);
@@ -100,6 +129,40 @@ export async function POST(req: NextRequest) {
         originalCode: code, newCode,
         added: safeBets.map(b => ({ label: b.label, odds: b.odds, tournament: b.tournament })),
         addedCount: safeBets.length,
+      });
+    }
+
+    // ── CHECK RESULTS ──
+    if (action === "check") {
+      const ticket = await fetchBookCode(code!);
+      const results = ticket.outcomes.map(event => {
+        const status = event.matchStatus;
+        const isDone = status === "Ended" || status === "Closed" || status === "Settled";
+        // For each market, check outcomes for winner indicator
+        const marketResults = event.markets.map(market => {
+          const picks = market.outcomes.map(outcome => ({
+            id: outcome.id,
+            desc: outcome.desc,
+            odds: parseFloat(outcome.odds),
+            isWinner: outcome.isWinning === true || outcome.isWinning === 1,
+          }));
+          return {
+            marketId: market.id,
+            specifier: market.specifier,
+            desc: market.desc,
+            picks,
+            matchStatus: status,
+            homeTeam: event.homeTeamName,
+            awayTeam: event.awayTeamName,
+          };
+        });
+        return marketResults;
+      }).flat();
+
+      return NextResponse.json({
+        code,
+        checkedAt: Date.now(),
+        results,
       });
     }
 

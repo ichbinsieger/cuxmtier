@@ -30,7 +30,7 @@ export async function GET() {
     // Fallback to live generation if the DB is unreachable (e.g. no DATABASE_URL)
     try {
       const slips = await getRecommendations();
-      return NextResponse.json({ slips, results: {}, history: [] });
+      return NextResponse.json({ slips, draw: null, results: {}, history: [] });
     } catch (fallbackError: any) {
       console.error("Recommend fallback error:", fallbackError);
       return NextResponse.json(
