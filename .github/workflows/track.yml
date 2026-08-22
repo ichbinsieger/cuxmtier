@@ -1,0 +1,23 @@
+name: CuxmTier 4h Tracker
+
+on:
+  schedule:
+    # Every 4 hours (UTC). Generates fresh slips + resolves results into Neon.
+    - cron: "0 */4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger generate + results check
+        run: |
+          code=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://cuxmtier.vercel.app/api/cron)
+          echo "HTTP $code"
+          cat /tmp/resp.json
+          if [ "$code" != "200" ]; then exit 1; fi
