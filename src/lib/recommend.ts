@@ -454,9 +454,9 @@ const DRAW_TARGET = 1000;
 const DRAW_MIN_ODDS = 2.8;
 const DRAW_MAX_ODDS = 4.5;
 // How many candidate matches to enrich with H2H + team-character data.
-// API-Football free plan = 10 req/min + 100/day, so keep this modest and
-// rely on the persistent cache (drawModel.ts) for repeat runs.
-const DRAW_ENRICH_LIMIT = 10;
+// API-Football free plan = 10 req/min + 100/day. 8 matches ≈ 40 calls ≈
+// 3.5 min first-run warm-up (persistent cache makes later runs near-free).
+const DRAW_ENRICH_LIMIT = 8;
 
 interface DrawCandidate {
   pick: SafePick;
