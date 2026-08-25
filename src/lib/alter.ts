@@ -215,13 +215,26 @@ export async function alterTicket(code: string): Promise<AlterResult> {
     const tournament = event.sport.category.tournament.name;
     const probs = await computeOneX2(event);
 
+    // Resolve the original pick's odds, then cap how far we're allowed to drop.
+    // An altered leg must not fall below 50% of its original odds (so a Draw @
+    // 3.1 can go down to ~1.55 but never collapse to a 1.2 near-certainty).
+    let originalOdds = 0;
+    for (const market of event.markets) {
+      if (market.id === sel.marketId) {
+        const o = market.outcomes.find((x) => x.id === sel.outcomeId);
+        if (o) originalOdds = parseFloat(o.odds) || 0;
+        break;
+      }
+    }
+    const minOdds = Math.max(MIN_ODDS, originalOdds > 0 ? originalOdds * 0.5 : 0);
+
     // Score every outcome in the clean markets, above the odds floor.
     const scored: ScoredAlt[] = [];
     for (const market of event.markets) {
       if (!isCleanMarket(market.desc)) continue;
       for (const outcome of market.outcomes) {
         const odds = parseFloat(outcome.odds);
-        if (!Number.isFinite(odds) || odds < MIN_ODDS) continue;
+        if (!Number.isFinite(odds) || odds < minOdds) continue;
         const bookmakerProb = parseFloat(outcome.probability || "0") || (odds > 0 ? 1 / odds : 0);
         const winProb = outcomeWinProb(probs, market.desc, outcome.desc, tournament, market.specifier, bookmakerProb);
         const evPercent = Math.round((odds * winProb - 1) * 100);
