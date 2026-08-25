@@ -72,6 +72,28 @@ export async function fetchBookCode(code: string): Promise<SharedTicket> {
   return json.data;
 }
 
+/**
+ * Fetch FULL event detail (all markets + outcomes) by event id. The share API
+ * only returns the *selected* outcome per market, so the Alter feature uses
+ * this endpoint to enumerate every alternative option for a game.
+ */
+export async function fetchEventDetail(eventId: string): Promise<SportyOutcome | null> {
+  try {
+    const res = await fetch(`https://www.sportybet.com/api/ng/factsCenter/event?eventId=${encodeURIComponent(eventId)}`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+      },
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.bizCode !== 10000) return null;
+    return json.data as SportyOutcome;
+  } catch {
+    return null;
+  }
+}
+
 export async function createBookCode(selections: SportySelection[]): Promise<string> {
   const res = await fetch(BASE, {
     method: "POST",

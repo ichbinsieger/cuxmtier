@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchBookCode, createBookCode } from "@/lib/sportybet";
 import { analyzeSelections, getShrinkSelections, selectionsToSportyFormat, recomputePortfolio } from "@/lib/analyzer";
 import { getSafeBets, safeBetToSelection } from "@/lib/safeBets";
+import { alterTicket } from "@/lib/alter";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { code, action, count, removeIds, selections } = body as {
       code: string;
-      action: "analyze" | "shrink" | "add" | "custom" | "rebuild" | "check";
+      action: "analyze" | "shrink" | "add" | "custom" | "rebuild" | "check" | "alter";
       count?: number;
       removeIds?: string[];
       selections?: Array<{ eventId: string; marketId: string; outcomeId: string; specifier?: string; productId: number; sportId: string }>;
@@ -164,6 +165,12 @@ export async function POST(req: NextRequest) {
         checkedAt: Date.now(),
         results,
       });
+    }
+
+    // ── ALTER (auto-swap every leg to its best option) ──
+    if (action === "alter") {
+      const result = await alterTicket(code!);
+      return NextResponse.json(result);
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });

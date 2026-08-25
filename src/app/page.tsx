@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 interface BestAlt {
   marketDesc: string; pickDesc: string; odds: number;
@@ -525,6 +526,11 @@ export default function Home() {
                 {loading ? "..." : "Analyze"}
               </button>
               {data && <button onClick={reset} className="shrink-0 px-4 py-4 bg-white/[0.03] border border-white/[0.08] text-white/40 text-sm rounded-2xl hover:bg-white/[0.08] hover:text-white/70 transition-all">Reset</button>}
+            </div>
+            <div className="animate-fade-up [animation-delay:400ms] mt-4">
+              <Link href="/alter" className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-600/10 border border-emerald-500/30 text-emerald-300 text-sm font-semibold hover:bg-emerald-600/20 transition-all">
+                ✨ AlterMe <span className="text-emerald-300/50 font-normal">— auto-swap every pick to its best option</span>
+              </Link>
             </div>
             {error && <p className="mt-3 text-red-400/70 text-sm">{error}</p>}
           </div>
