@@ -51,5 +51,25 @@ export async function ensureSchema(): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS idx_football_cache_updated ON football_cache (updated_at);
+
+    -- Raw completed matches from Football-Data.co.uk CSVs (last ~2 seasons).
+    -- Stored raw so the draw model can compute team form/goals/home-away split
+    -- /odds-drift over a rolling recent window regardless of season start.
+    -- Populated by /api/refreshfootball.
+    CREATE TABLE IF NOT EXISTS football_matches (
+      league     TEXT NOT NULL,
+      season     TEXT NOT NULL,
+      match_date DATE NOT NULL,
+      home       TEXT NOT NULL,
+      away       TEXT NOT NULL,
+      fthg       INT,
+      ftag       INT,
+      ftr        TEXT,
+      open_draw  REAL,
+      close_draw REAL,
+      PRIMARY KEY (league, season, home, away, match_date)
+    );
+    CREATE INDEX IF NOT EXISTS idx_fm_league_home ON football_matches (league, home);
+    CREATE INDEX IF NOT EXISTS idx_fm_league_away ON football_matches (league, away);
   `);
 }

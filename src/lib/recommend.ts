@@ -11,6 +11,7 @@
 import { SportySelection, createBookCode } from "./sportybet";
 import { scoreDraw, findTeam, getTeamForm, getH2HDrawRate } from "./drawModel";
 import type { ApiTeam, TeamForm } from "./drawModel";
+import { getCsvTeamStats, leagueCodeFor, type CsvTeamStats } from "./footballData";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -565,24 +566,35 @@ export async function getDrawRecommendation(): Promise<RecommendedSlip | null> {
   const candidates = await collectDrawPicks();
   if (candidates.length < 5) return null;
 
-  // Enrich the top candidates with H2H + team-character data (API-Football).
-  // In-run Maps dedupe repeated teams; drawModel.ts adds a persistent DB cache.
+  // Enrich the top candidates with H2H + team-character data.
+  // Team character (form/goals/home-away split/drift) prefers the current-
+  // season Football-Data.co.uk CSV when the league is in our catalogue, and
+  // falls back to API-Football otherwise. H2H always uses API-Football.
   const teamCache = new Map<string, { team: ApiTeam | null }>();
   const formCache = new Map<number, TeamForm | null>();
   const h2hCache = new Map<string, number | null>();
+  const csvCache = new Map<string, CsvTeamStats | null>();
 
   const enriched: SafePick[] = [];
 
   for (const c of candidates.slice(0, DRAW_ENRICH_LIMIT)) {
     const { pick } = c;
     try {
-      // Resolve both teams (country hint disambiguates e.g. "Arsenal" England
-      // vs Argentina), then their character + head-to-head draw history.
+      // Always resolve API-Football ids — needed for H2H regardless of source.
       const homeTeam = await findTeamCached(pick.homeTeam, c.country, teamCache);
       const awayTeam = await findTeamCached(pick.awayTeam, c.country, teamCache);
 
-      const homeForm = homeTeam ? await formCached(homeTeam.id, formCache) : null;
-      const awayForm = awayTeam ? await formCached(awayTeam.id, formCache) : null;
+      // Form/goals/drift: prefer current-season CSV, fall back to API-Football.
+      const leagueCode = leagueCodeFor(pick.tournament, c.country);
+      const homeCsv = await csvCached(pick.homeTeam, leagueCode, csvCache);
+      const awayCsv = await csvCached(pick.awayTeam, leagueCode, csvCache);
+
+      const homeForm = homeCsv
+        ? formFromCsv(homeCsv)
+        : homeTeam ? await formCached(homeTeam.id, formCache) : null;
+      const awayForm = awayCsv
+        ? formFromCsv(awayCsv)
+        : awayTeam ? await formCached(awayTeam.id, formCache) : null;
 
       const h2h = homeTeam && awayTeam
         ? await h2hCached(homeTeam.id, awayTeam.id, h2hCache)
@@ -664,4 +676,31 @@ async function h2hCached(
   const rate = await getH2HDrawRate(homeId, awayId);
   cache.set(key, rate);
   return rate;
+}
+
+// Convert CSV team stats into the TeamForm shape the draw model expects.
+function formFromCsv(s: CsvTeamStats): TeamForm {
+  return {
+    drawRate: s.drawRate,
+    goalsFor: s.gfAvg,
+    goalsAgainst: s.gaAvg,
+    homeDrawRate: s.homeDrawRate,
+    awayDrawRate: s.awayDrawRate,
+    avgDrift: s.avgDrift,
+    sampleSize: s.matches,
+  };
+}
+
+// CSV stats lookup with an in-run cache (one DB query per unique team).
+async function csvCached(
+  teamName: string,
+  leagueCode: string | null,
+  cache: Map<string, CsvTeamStats | null>
+): Promise<CsvTeamStats | null> {
+  if (!leagueCode) return null;
+  const key = `${leagueCode}||${teamName}`;
+  if (cache.has(key)) return cache.get(key)!;
+  const stats = await getCsvTeamStats(teamName, leagueCode);
+  cache.set(key, stats);
+  return stats;
 }

@@ -200,6 +200,9 @@ export interface TeamForm {
   drawRate: number;      // 0–1 share of sampled matches ending in draws
   goalsFor: number;      // avg goals scored per game
   goalsAgainst: number;  // avg goals conceded per game
+  homeDrawRate: number | null; // draw rate in home matches (null if unknown)
+  awayDrawRate: number | null; // draw rate in away matches (null if unknown)
+  avgDrift: number | null;     // avg (closing − opening) draw odds; negative = sharp money on draw
   sampleSize: number;
 }
 
@@ -220,10 +223,12 @@ export async function getTeamForm(teamId: number): Promise<TeamForm | null> {
   if (finished.length === 0) return null;
 
   let draws = 0, gf = 0, ga = 0;
+  let homeMatches = 0, homeDraws = 0, awayMatches = 0, awayDraws = 0;
   for (const f of finished) {
     const hg = f.goals.home as number, ag = f.goals.away as number;
     const isHome = f.teams.home.id === teamId;
-    if (isHome) { gf += hg; ga += ag; } else { gf += ag; ga += hg; }
+    if (isHome) { gf += hg; ga += ag; homeMatches++; if (hg === ag) homeDraws++; }
+    else { gf += ag; ga += hg; awayMatches++; if (hg === ag) awayDraws++; }
     if (hg === ag) draws++;
   }
 
@@ -231,6 +236,9 @@ export async function getTeamForm(teamId: number): Promise<TeamForm | null> {
     drawRate: draws / finished.length,
     goalsFor: gf / finished.length,
     goalsAgainst: ga / finished.length,
+    homeDrawRate: homeMatches ? homeDraws / homeMatches : null,
+    awayDrawRate: awayMatches ? awayDraws / awayMatches : null,
+    avgDrift: null, // API-Football has no opening/closing odds on free plan
     sampleSize: finished.length,
   };
   await cacheSet(key, form);
@@ -279,6 +287,7 @@ export interface DrawScore {
     goals: number;
     parity: number;
     h2h: number | null;
+    drift: number | null;
   };
   usedTeamData: boolean;
 }
@@ -286,10 +295,14 @@ export interface DrawScore {
 /**
  * Combine all signals into an adjusted draw probability.
  *
- * Weights (no H2H):  bookmaker 0.45, league 0.15, form 0.25, goals 0.10,
- *                    parity 0.05
- * Weights (with H2H): bookmaker 0.40, league 0.10, form 0.15, goals 0.08,
- *                     parity 0.07, h2h 0.20
+ * Weights (no H2H):  bookmaker 0.43, league 0.14, form 0.25, goals 0.10,
+ *                    parity 0.05, drift 0.03
+ * Weights (with H2H): bookmaker 0.38, league 0.09, form 0.15, goals 0.08,
+ *                     parity 0.06, h2h 0.20, drift 0.04
+ *
+ * The "form" signal is venue-aware: the home team's *home* draw rate and the
+ * away team's *away* draw rate are used when available (CSV home/away split),
+ * falling back to each team's overall draw rate.
  */
 export function scoreDraw(
   bookmakerProb: number,
@@ -302,12 +315,13 @@ export function scoreDraw(
 ): DrawScore {
   const league = leagueDrawRate(tournament);
 
-  // Form signal: average of both teams' draw rates, defaulting to league rate
+  // Form signal: venue-aware average of both teams' draw rates, defaulting
+  // to league rate. Prefers home team's home rate + away team's away rate.
   let formSignal = league;
   if (homeForm || awayForm) {
     const rates: number[] = [];
-    if (homeForm) rates.push(homeForm.drawRate);
-    if (awayForm) rates.push(awayForm.drawRate);
+    if (homeForm) rates.push(homeForm.homeDrawRate ?? homeForm.drawRate);
+    if (awayForm) rates.push(awayForm.awayDrawRate ?? awayForm.drawRate);
     if (rates.length) formSignal = rates.reduce((a, b) => a + b, 0) / rates.length;
   }
 
@@ -325,24 +339,40 @@ export function scoreDraw(
     paritySignal = Math.max(0.20, 0.30 - gap * 0.006);
   }
 
+  // Drift signal (#8): a draw price that shortens from open→close (negative
+  // drift) suggests sharp money on the draw. Map to a draw-probability nudge
+  // around the league baseline. Lightly weighted — draws are priced
+  // efficiently, so this is a marginal adjustment.
+  let driftSignal: number | null = null;
+  const drifts: number[] = [];
+  if (homeForm?.avgDrift != null) drifts.push(homeForm.avgDrift);
+  if (awayForm?.avgDrift != null) drifts.push(awayForm.avgDrift);
+  if (drifts.length > 0) {
+    const d = drifts.reduce((a, b) => a + b, 0) / drifts.length;
+    driftSignal = Math.max(0.15, Math.min(0.40, league + -d * 0.20));
+  }
+
   const usedH2h = h2hDrawRate !== null && h2hDrawRate >= 0;
+  const usedDrift = driftSignal !== null;
 
   let adjusted: number;
   if (usedH2h) {
     adjusted =
-      0.40 * bookmakerProb +
-      0.10 * league +
+      0.38 * bookmakerProb +
+      0.09 * league +
       0.15 * formSignal +
       0.08 * goalsSignal +
-      0.07 * paritySignal +
-      0.20 * h2hDrawRate!;
+      0.06 * paritySignal +
+      0.20 * h2hDrawRate! +
+      (usedDrift ? 0.04 * driftSignal! : 0.04 * league);
   } else {
     adjusted =
-      0.45 * bookmakerProb +
-      0.15 * league +
+      0.43 * bookmakerProb +
+      0.14 * league +
       0.25 * formSignal +
       0.10 * goalsSignal +
-      0.05 * paritySignal;
+      0.05 * paritySignal +
+      (usedDrift ? 0.03 * driftSignal! : 0.03 * league);
   }
 
   // Don't let the model drift wildly from the market — clamp to ±0.12.
@@ -362,6 +392,7 @@ export function scoreDraw(
       goals: goalsSignal,
       parity: paritySignal,
       h2h: usedH2h ? h2hDrawRate : null,
+      drift: usedDrift ? driftSignal : null,
     },
     usedTeamData: !!(homeForm || awayForm || usedH2h),
   };

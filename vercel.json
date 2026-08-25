@@ -6,6 +6,10 @@
     {
       "path": "/api/cron",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/refreshfootball",
+      "schedule": "30 1 * * *"
     }
   ]
 }
