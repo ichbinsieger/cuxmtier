@@ -94,6 +94,23 @@ const MAX_ODDS = 1.70;
 // Accumulator targets
 const TARGETS = [5, 10, 15];
 
+// ── Same-day filter ────────────────────────────────────────────────
+// Only consider matches that kick off today (Africa/Lagos time). Betting
+// same-day means we bet at near-closing odds — future games are excluded
+// because their opening odds will drift before kickoff, which produces a
+// false "edge" that isn't real.
+const lagosDayFmt = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Africa/Lagos",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function isSameDay(estimateStartTimeMs: number): boolean {
+  if (!estimateStartTimeMs || estimateStartTimeMs <= 0) return false;
+  return lagosDayFmt.format(new Date(estimateStartTimeMs)) === lagosDayFmt.format(new Date());
+}
+
 // ── League Weighting ────────────────────────────────────────────
 
 function leagueWeight(tournament: string, country?: string): number {
@@ -236,6 +253,9 @@ export async function collectSafePicks(): Promise<SafePick[]> {
       for (const event of tournament.events) {
         // Skip live/in-play matches
         if (event.matchStatus !== "Not start") continue;
+
+        // Same-day only — future games' opening odds will drift
+        if (!isSameDay(event.estimateStartTime)) continue;
 
         // Skip leagues with zero weight (simulated)
         if (leagueWeight(event.sport.category.tournament.name, event.sport.category.name) === 0) continue;
@@ -475,6 +495,9 @@ async function collectDrawPicks(): Promise<DrawCandidate[]> {
   for (const tournament of groups) {
     for (const event of tournament.events) {
       if (event.matchStatus !== "Not start") continue;
+
+      // Same-day only — future games' opening odds will drift
+      if (!isSameDay(event.estimateStartTime)) continue;
 
       const league = event.sport.category.tournament.name;
       const country = event.sport.category.name;
