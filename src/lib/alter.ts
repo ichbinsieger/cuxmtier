@@ -31,18 +31,25 @@ const MIN_ODDS = 1.2;
 // How much better (on the composite score) the alternative must be to swap.
 const MIN_IMPROVEMENT = 0.03;
 
-// Clean, well-understood markets we're willing to alter INTO. Excludes novelty
-// markets ("Goal Bounds", "Excluded Number of Goals", "score 2 in a row",
-// correct score, corners, cards…) and 1X2 variants ("1X2 - 1UP", "Never Down").
-function isCleanMarket(desc: string): boolean {
+// Clean, well-understood markets we're willing to alter INTO, per sport.
+// Excludes novelty markets ("Goal Bounds", correct score, corners, cards,
+// "score 2 in a row"…) and 1X2 variants ("1X2 - 1UP", "Never Down").
+function isCleanMarket(sportId: string, desc: string): boolean {
   const d = desc.toLowerCase().trim();
-  return (
-    d === "1x2" ||
-    d === "double chance" ||
-    d === "over/under" ||
-    d === "both teams to score" ||
-    d === "draw no bet"
-  );
+  if (sportId === "sr:sport:1") {
+    // Football
+    return ["1x2", "double chance", "over/under", "both teams to score", "draw no bet"].includes(d);
+  }
+  if (sportId === "sr:sport:5") {
+    // Tennis — match winner, "X to win a set", games totals/spread
+    return d === "winner" || d.includes("to win a set") || d.includes("over/under") || d.includes("handicap");
+  }
+  if (sportId === "sr:sport:2") {
+    // Basketball
+    return d === "winner" || d.includes("money line") || d.includes("over/under") || d.includes("handicap");
+  }
+  // Generic fallback (other sports) — match result + totals only
+  return d === "winner" || d === "money line" || d.includes("over/under");
 }
 
 // Composite score = win probability (primary) + a capped edge bonus.
@@ -213,25 +220,29 @@ export async function alterTicket(code: string): Promise<AlterResult> {
     }
 
     const tournament = event.sport.category.tournament.name;
+    const sportId = event.sport.id;
     const probs = await computeOneX2(event);
 
-    // Resolve the original pick's odds, then cap how far we're allowed to drop.
-    // An altered leg must not fall below 50% of its original odds (so a Draw @
-    // 3.1 can go down to ~1.55 but never collapse to a 1.2 near-certainty).
-    let originalOdds = 0;
+    // Resolve the original pick across ALL markets (for accurate display, even
+    // when it sits in a market we don't alter into).
+    let origMarketDesc = "?", origPickDesc = "?", origOdds = 0, origSpecifier: string | undefined, origProductId = 0;
     for (const market of event.markets) {
-      if (market.id === sel.marketId) {
-        const o = market.outcomes.find((x) => x.id === sel.outcomeId);
-        if (o) originalOdds = parseFloat(o.odds) || 0;
-        break;
-      }
+      if (market.id !== sel.marketId) continue;
+      origMarketDesc = market.desc;
+      origSpecifier = market.specifier;
+      origProductId = market.product;
+      const o = market.outcomes.find((x) => x.id === sel.outcomeId);
+      if (o) { origPickDesc = o.desc; origOdds = parseFloat(o.odds) || 0; }
+      break;
     }
-    const minOdds = Math.max(MIN_ODDS, originalOdds > 0 ? originalOdds * 0.5 : 0);
+    // Cap how far we're allowed to drop: an altered leg must not fall below 50%
+    // of its original odds (a Draw @ 3.1 → floor 1.55, never a 1.2 near-certainty).
+    const minOdds = Math.max(MIN_ODDS, origOdds > 0 ? origOdds * 0.5 : 0);
 
-    // Score every outcome in the clean markets, above the odds floor.
+    // Score every outcome in the clean markets for this sport, above the floor.
     const scored: ScoredAlt[] = [];
     for (const market of event.markets) {
-      if (!isCleanMarket(market.desc)) continue;
+      if (!isCleanMarket(sportId, market.desc)) continue;
       for (const outcome of market.outcomes) {
         const odds = parseFloat(outcome.odds);
         if (!Number.isFinite(odds) || odds < minOdds) continue;
@@ -254,7 +265,20 @@ export async function alterTicket(code: string): Promise<AlterResult> {
       }
     }
 
-    const current = scored.find((s) => s.marketId === sel.marketId && s.outcomeId === sel.outcomeId);
+    // The original pick — score it ourselves so it's always present for display,
+    // even if its own market isn't in the clean list (e.g. an exotic market).
+    let current = scored.find((s) => s.marketId === sel.marketId && s.outcomeId === sel.outcomeId);
+    if (!current && origOdds > 0) {
+      const bookmakerProb = 1 / origOdds;
+      const winProb = outcomeWinProb(probs, origMarketDesc, origPickDesc, tournament, origSpecifier, bookmakerProb);
+      const evPercent = Math.round((origOdds * winProb - 1) * 100);
+      current = {
+        marketId: sel.marketId, outcomeId: sel.outcomeId, specifier: origSpecifier, productId: origProductId,
+        marketDesc: origMarketDesc, pickDesc: origPickDesc, odds: origOdds, bookmakerProb, winProb, evPercent,
+        score: alterScore(winProb, evPercent),
+      };
+    }
+
     let best = current;
     for (const s of scored) {
       if (!best || s.score > best.score) best = s;
@@ -282,7 +306,7 @@ export async function alterTicket(code: string): Promise<AlterResult> {
         outcomeId: best.outcomeId, productId: best.productId, sportId: sel.sportId,
       });
     } else {
-      if (!current) reason = "Original pick not in Main markets — kept as-is.";
+      if (!current) reason = "Original pick couldn't be resolved — kept as-is.";
       else if (!best || best.outcomeId === current.outcomeId) reason = `Kept "${current.pickDesc}" — already the best option.`;
       else reason = `Kept "${current.pickDesc}" — best alternative "${best.pickDesc}" not clearly better.`;
       newSelections.push(sel);
