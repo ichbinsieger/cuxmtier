@@ -41,10 +41,10 @@ const PRIORS: PriorEntry[] = [
   { leaguePattern: "English Premier League", marketPattern: "Double Chance", historicalHitRate: 0.74, sampleSize: "~2500" },
   { leaguePattern: "Serie A", marketPattern: "Double Chance", historicalHitRate: 0.72, sampleSize: "~2500" },
 
-  // ── Both Teams to Score ──
-  { leaguePattern: "Bundesliga", marketPattern: "Both Teams to Score", historicalHitRate: 0.56, sampleSize: "~2400" },
-  { leaguePattern: "English Premier League", marketPattern: "Both Teams to Score", historicalHitRate: 0.52, sampleSize: "~2500" },
-  { leaguePattern: "Eredivisie", marketPattern: "Both Teams to Score", historicalHitRate: 0.58, sampleSize: "~1800" },
+  // ── Both Teams to Score (SportyBet labels this market "GG/NG") ──
+  { leaguePattern: "Bundesliga", marketPattern: "GG/NG", historicalHitRate: 0.56, sampleSize: "~2400" },
+  { leaguePattern: "English Premier League", marketPattern: "GG/NG", historicalHitRate: 0.52, sampleSize: "~2500" },
+  { leaguePattern: "Eredivisie", marketPattern: "GG/NG", historicalHitRate: 0.58, sampleSize: "~1800" },
 ];
 
 /**

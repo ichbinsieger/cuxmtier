@@ -784,7 +784,14 @@ export default function Home() {
             byDate.get(dateKey)!.push(h);
           }
 
-          const days = Array.from(byDate.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+          const days = Array.from(byDate.entries()).sort((a, b) => {
+            // Sort chronologically by the latest entry in each day group, not
+            // alphabetically by the "DD Mon YY" string (which would put "01 Sep"
+            // below "31 Aug" because "0" < "3").
+            const ta = Math.max(...a[1].map((e) => e.timestamp));
+            const tb = Math.max(...b[1].map((e) => e.timestamp));
+            return tb - ta;
+          });
           const totalPages = Math.ceil(days.length / RESULTS_PER_PAGE);
           const pageDays = days.slice(resultsPage * RESULTS_PER_PAGE, (resultsPage + 1) * RESULTS_PER_PAGE);
 

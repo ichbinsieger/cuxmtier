@@ -5502,7 +5502,73 @@
           "sportId": "sr:sport:5"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 4,
+        "lost": 3,
+        "pending": 0,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Club Santos Laguna vs CF Monterrey",
+            "pick": "Home/Away & Over 1.5",
+            "market": "Double Chance & Over/Under 1.5",
+            "odds": 1.26,
+            "result": "won",
+            "score": "['0:3', '1:1']"
+          },
+          {
+            "match": "Club Leon vs Queretaro FC",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.25,
+            "result": "lost",
+            "score": "['0:0', '0:1']"
+          },
+          {
+            "match": "Deportivo Toluca FC vs Atlas FC",
+            "pick": "Home & Over 1.5",
+            "market": "1X2 & Over/Under 1.5",
+            "odds": 1.25,
+            "result": "lost",
+            "score": "['0:1', '1:0']"
+          },
+          {
+            "match": "Club General Caballero JLM vs Tacuary Asuncion",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.27,
+            "result": "won",
+            "score": "['1:1', '3:0']"
+          },
+          {
+            "match": "Toronto Tempo vs Indiana Fever",
+            "pick": "Away",
+            "market": "1X2",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['23:33', '26:24', '20:24', '26:20']"
+          },
+          {
+            "match": "CA Independiente Avellaneda vs Independiente Rivadavia",
+            "pick": "Home/Draw & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.27,
+            "result": "won",
+            "score": "['0:0', '0:0']"
+          },
+          {
+            "match": "Muller, Alexandre vs Wong, Coleman",
+            "pick": "Over 18.5",
+            "market": "Total games 18.5",
+            "odds": 1.25,
+            "result": "lost",
+            "score": "['2:6', '2:6']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "RSXH7H",
@@ -5616,7 +5682,73 @@
           "sportId": "sr:sport:1"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 3,
+        "lost": 3,
+        "pending": 1,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Club Leon vs Queretaro FC",
+            "pick": "Home/Away & Over 2.5",
+            "market": "Double Chance & Over/Under 2.5",
+            "odds": 1.39,
+            "result": "lost",
+            "score": "['0:0', '0:1']"
+          },
+          {
+            "match": "Velez Sarsfield vs Defensa y Justicia",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.39,
+            "result": "won",
+            "score": "['1:0', '0:1']"
+          },
+          {
+            "match": "Draxl, Liam vs Andrade, Andres",
+            "pick": "Home",
+            "market": "Winner",
+            "odds": 1.39,
+            "result": "lost",
+            "score": "['2:6', '3:6']"
+          },
+          {
+            "match": "Bicknell, Blaise vs Purcell, Max",
+            "pick": "Over 19.5",
+            "market": "Total games 19.5",
+            "odds": 1.39,
+            "result": "won",
+            "score": "['4:6', '7:6', '3:6']"
+          },
+          {
+            "match": "Hapoel Tel-Aviv vs Bayern Munich",
+            "pick": "Hapoel Tel-Aviv by 6+",
+            "market": "Winning margin (incl. overtime)",
+            "odds": 1.39,
+            "result": "pending",
+            "status": "Not start"
+          },
+          {
+            "match": "Deportes Copiapo vs Curico Unido",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.38,
+            "result": "won",
+            "score": "['2:0', '2:0']"
+          },
+          {
+            "match": "Gimnasia y Esgrima La Plata vs Gimnasia y Esgrima Mendoza",
+            "pick": "Home/Draw & Under 3.5",
+            "market": "Double Chance & Over/Under 3.5",
+            "odds": 1.4,
+            "result": "lost",
+            "score": "['0:2', '2:1']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "HY4C7Z",
@@ -5730,7 +5862,73 @@
           "sportId": "sr:sport:2"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 5,
+        "lost": 1,
+        "pending": 1,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Guarani FC SP vs Ypiranga FC RS",
+            "pick": "Home/Draw & Over 1.5",
+            "market": "Double Chance & Over/Under 1.5",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['1:0', '1:2']"
+          },
+          {
+            "match": "Toronto Tempo vs Indiana Fever",
+            "pick": "Away (-4.5)",
+            "market": "Handicap (incl. overtime) 4.5",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['23:33', '26:24', '20:24', '26:20']"
+          },
+          {
+            "match": "Club Santos Laguna vs CF Monterrey",
+            "pick": "Home/Away & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.48,
+            "result": "lost",
+            "score": "['0:3', '1:1']"
+          },
+          {
+            "match": "Newell's Old Boys vs CA Banfield",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.48,
+            "result": "won",
+            "score": "['0:0', '2:1']"
+          },
+          {
+            "match": "Golden State Valkyries vs Dallas Wings",
+            "pick": "Away (+10.5)",
+            "market": "Handicap (incl. overtime) -10.5",
+            "odds": 1.46,
+            "result": "won",
+            "score": "['20:19', '24:9', '18:18', '16:24']"
+          },
+          {
+            "match": "CA Marne vs CD Albatros",
+            "pick": "Home",
+            "market": "Draw No Bet",
+            "odds": 1.48,
+            "result": "won",
+            "score": "['16:15', '18:15', '16:19', '26:19']"
+          },
+          {
+            "match": "Dubai Basketball vs Real Madrid",
+            "pick": "Home (+5.5)",
+            "market": "Handicap (incl. overtime) 5.5",
+            "odds": 1.46,
+            "result": "pending",
+            "status": "Not start"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "G54NW9",
@@ -5844,7 +6042,73 @@
           "sportId": "sr:sport:2"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 7,
+        "lost": 0,
+        "pending": 0,
+        "total": 7,
+        "slip_won": true,
+        "picks": [
+          {
+            "match": "Washington Mystics vs Toronto Tempo",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.26,
+            "result": "won",
+            "score": "['25:24', '22:9', '22:23', '24:26']"
+          },
+          {
+            "match": "Urunday Universitario vs Club Atletico Aguada",
+            "pick": "Away",
+            "market": "Winner (incl. overtime)",
+            "odds": 1.26,
+            "result": "won",
+            "score": "['19:23', '14:28', '16:21', '16:20']"
+          },
+          {
+            "match": "Chicago Sky vs New York Liberty",
+            "pick": "Home (+11.5)",
+            "market": "Handicap (incl. overtime) 11.5",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['24:24', '30:19', '20:23', '19:20']"
+          },
+          {
+            "match": "Connecticut Sun vs Los Angeles Sparks",
+            "pick": "Away (+8.5)",
+            "market": "Handicap (incl. overtime) -8.5",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['27:20', '19:20', '26:15', '13:22']"
+          },
+          {
+            "match": "Toronto Tempo vs Indiana Fever",
+            "pick": "Away (-1.5)",
+            "market": "Handicap (incl. overtime) 1.5",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['23:33', '26:24', '20:24', '26:20']"
+          },
+          {
+            "match": "Club Atletico Olimpia vs CS Deportivo Sayago",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.28,
+            "result": "won",
+            "score": "['12:22', '21:16', '25:19', '18:6']"
+          },
+          {
+            "match": "Las Vegas Aces vs Atlanta Dream",
+            "pick": "Away (+11.5)",
+            "market": "Handicap (incl. overtime) -11.5",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['25:24', '16:28', '20:19', '21:26']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "H3ZCZK",
@@ -5958,7 +6222,73 @@
           "sportId": "sr:sport:2"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 4,
+        "lost": 3,
+        "pending": 0,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Club Atletico Olimpia vs CS Deportivo Sayago",
+            "pick": "Over 148.5",
+            "market": "Over/Under (incl. overtime) 148.5",
+            "odds": 1.39,
+            "result": "lost",
+            "score": "['12:22', '21:16', '25:19', '18:6']"
+          },
+          {
+            "match": "Chicago Sky vs New York Liberty",
+            "pick": "Home (+8.5)",
+            "market": "Handicap (incl. overtime) 8.5",
+            "odds": 1.4,
+            "result": "won",
+            "score": "['24:24', '30:19', '20:23', '19:20']"
+          },
+          {
+            "match": "Pade, Charlie vs Papac, Tomislav Edward",
+            "pick": "Home",
+            "market": "Winner",
+            "odds": 1.4,
+            "result": "lost",
+            "score": "['3:6', '1:6']"
+          },
+          {
+            "match": "Connecticut Sun vs Los Angeles Sparks",
+            "pick": "Home (+7.5)",
+            "market": "Handicap (incl. overtime) 7.5",
+            "odds": 1.37,
+            "result": "won",
+            "score": "['27:20', '19:20', '26:15', '13:22']"
+          },
+          {
+            "match": "Urupan de Pando vs CA Tabare",
+            "pick": "Over 147.5",
+            "market": "Over/Under (incl. overtime) 147.5",
+            "odds": 1.4,
+            "result": "won",
+            "score": "['21:16', '21:24', '15:29', '8:20']"
+          },
+          {
+            "match": "Montevideo Basket vs Olivol Mundial",
+            "pick": "Under 164.5",
+            "market": "Over/Under (incl. overtime) 164.5",
+            "odds": 1.4,
+            "result": "lost",
+            "score": "['20:11', '21:24', '24:24', '22:25']"
+          },
+          {
+            "match": "Toronto Tempo vs Indiana Fever",
+            "pick": "Home (+17.5)",
+            "market": "Handicap (incl. overtime) 17.5",
+            "odds": 1.35,
+            "result": "won",
+            "score": "['23:33', '26:24', '20:24', '26:20']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "HJNPHT",
@@ -6072,7 +6402,73 @@
           "sportId": "sr:sport:2"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 4,
+        "lost": 2,
+        "pending": 1,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "CA Paulistano SP vs SC Corinthians Paulista",
+            "pick": "Away",
+            "market": "1X2",
+            "odds": 1.47,
+            "result": "pending",
+            "status": "Abandoned"
+          },
+          {
+            "match": "Jaisinghani, Raghav vs Necz, Andras",
+            "pick": "Home",
+            "market": "Winner",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['6:2', '2:6', '6:4']"
+          },
+          {
+            "match": "Connecticut Sun vs Los Angeles Sparks",
+            "pick": "Away (+4.5)",
+            "market": "Handicap (incl. overtime) -4.5",
+            "odds": 1.48,
+            "result": "lost",
+            "score": "['27:20', '19:20', '26:15', '13:22']"
+          },
+          {
+            "match": "Club Atletico Olimpia vs CS Deportivo Sayago",
+            "pick": "Over 150.5",
+            "market": "Over/Under (incl. overtime) 150.5",
+            "odds": 1.48,
+            "result": "lost",
+            "score": "['12:22', '21:16', '25:19', '18:6']"
+          },
+          {
+            "match": "Kingsley Westside FC vs Gwelup Croatia SC",
+            "pick": "Over 2.5",
+            "market": "Over/Under",
+            "odds": 1.46,
+            "result": "won",
+            "score": "['1:1', '3:1']"
+          },
+          {
+            "match": "Slovan Bratislava vs FC Kosice",
+            "pick": "Over 2.5",
+            "market": "Over/Under",
+            "odds": 1.48,
+            "result": "won",
+            "score": "['1:1', '1:0']"
+          },
+          {
+            "match": "Tabare vs Club Malvin",
+            "pick": "Under 55.5",
+            "market": "Tabare Over/Under (incl. overtime) 55.5",
+            "odds": 1.46,
+            "result": "won",
+            "score": "['21:17', '4:18', '14:7', '9:19']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "T2DV61",
@@ -6186,7 +6582,73 @@
           "sportId": "sr:sport:1"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 4,
+        "lost": 3,
+        "pending": 0,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Pegula, Jessica vs Swiatek, Iga",
+            "pick": "Over 17.5",
+            "market": "Total games 17.5",
+            "odds": 1.26,
+            "result": "won",
+            "score": "['7:5', '4:6', '6:4']"
+          },
+          {
+            "match": "Barcelona SC vs Orense SC",
+            "pick": "Home/Draw & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['2:0', '1:0']"
+          },
+          {
+            "match": "Diablos Rojos Del Mexico vs Lobos de Puebla",
+            "pick": "Home",
+            "market": "Draw No Bet",
+            "odds": 1.27,
+            "result": "lost",
+            "score": "['22:25', '20:22', '18:28', '24:20']"
+          },
+          {
+            "match": "CD Tecnico Universitario vs Guayaquil City FC",
+            "pick": "Home/Draw & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.25,
+            "result": "lost",
+            "score": "['1:0', '1:3']"
+          },
+          {
+            "match": "Leones Futbol Club vs CSD Independiente del Valle",
+            "pick": "Draw/Away & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.27,
+            "result": "lost",
+            "score": "['1:0', '1:3']"
+          },
+          {
+            "match": "Toronto Tempo vs Portland Fire",
+            "pick": "Away (+7.5)",
+            "market": "Handicap (incl. overtime) -7.5",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['16:24', '28:20', '22:15', '16:20']"
+          },
+          {
+            "match": "Sportivo General San Martin Formosa vs CA 9 de Julio Rafaela",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.28,
+            "result": "won",
+            "score": "['2:1', '0:0']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "LSUPDT",
@@ -6300,7 +6762,73 @@
           "sportId": "sr:sport:1"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 4,
+        "lost": 3,
+        "pending": 0,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "CE Juventude de Estancia SE vs Portuguesa AP",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.39,
+            "result": "won",
+            "score": "['0:0', '1:0']"
+          },
+          {
+            "match": "CD Cuenca vs Mushuc Runa SC",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.39,
+            "result": "lost",
+            "score": "['0:0', '0:0']"
+          },
+          {
+            "match": "Leones Futbol Club vs CSD Independiente del Valle",
+            "pick": "Home/Away & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.39,
+            "result": "lost",
+            "score": "['1:0', '1:3']"
+          },
+          {
+            "match": "Delfin SC vs SD Aucas",
+            "pick": "Home/Away & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.39,
+            "result": "won",
+            "score": "['0:0', '0:1']"
+          },
+          {
+            "match": "Panteras de Aguascalientes vs Santos de San Luis",
+            "pick": "Away (+8.5)",
+            "market": "Handicap (incl. overtime) -8.5",
+            "odds": 1.39,
+            "result": "lost",
+            "score": "['29:24', '26:20', '21:17', '28:27']"
+          },
+          {
+            "match": "CA Bartolome Mitre vs Douglas Haig",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.38,
+            "result": "won",
+            "score": "['0:2', '0:1']"
+          },
+          {
+            "match": "CDC Nicanor Otamendi vs Costa Brava de General Pico",
+            "pick": "Home/Away & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.4,
+            "result": "won",
+            "score": "['0:0', '0:1']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "U8T1JS",
@@ -6414,7 +6942,73 @@
           "sportId": "sr:sport:1"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 5,
+        "lost": 2,
+        "pending": 0,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Delfin SC vs SD Aucas",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.47,
+            "result": "lost",
+            "score": "['0:0', '0:1']"
+          },
+          {
+            "match": "Club Olimpo vs Kimberley de Mar Del Plata",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.47,
+            "result": "lost",
+            "score": "['0:0', '1:0']"
+          },
+          {
+            "match": "Barcelona SC vs Orense SC",
+            "pick": "Home/Draw & Under 3.5",
+            "market": "Double Chance & Over/Under 3.5",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['2:0', '1:0']"
+          },
+          {
+            "match": "LDU Quito vs CS Emelec",
+            "pick": "Home/Draw & Under 3.5",
+            "market": "Double Chance & Over/Under 3.5",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['2:0', '0:0']"
+          },
+          {
+            "match": "CD Tecnico Universitario vs Guayaquil City FC",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.48,
+            "result": "won",
+            "score": "['1:0', '1:3']"
+          },
+          {
+            "match": "CD Cuenca vs Mushuc Runa SC",
+            "pick": "Draw/Away & Under 4.5",
+            "market": "Double Chance & Over/Under 4.5",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['0:0', '0:0']"
+          },
+          {
+            "match": "Western Suburbs FC vs Waterside Karori",
+            "pick": "Home",
+            "market": "1X2 - Never Down",
+            "odds": 1.48,
+            "result": "won",
+            "score": "['1:0', '2:0']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "GCAXPA",
@@ -6528,7 +7122,73 @@
           "sportId": "sr:sport:2"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 6,
+        "lost": 0,
+        "pending": 1,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Phoenix Mercury vs Atlanta Dream",
+            "pick": "Home (+13.5)",
+            "market": "Handicap (incl. overtime) 13.5",
+            "odds": 1.26,
+            "result": "won",
+            "score": "['18:29', '17:21', '33:23', '21:26']"
+          },
+          {
+            "match": "Zapp, Logan vs Treacy, Adrian",
+            "pick": "Home",
+            "market": "Winner",
+            "odds": 1.26,
+            "result": "pending",
+            "status": "Retired"
+          },
+          {
+            "match": "Toronto Tempo vs Las Vegas Aces",
+            "pick": "Las Vegas Aces by 6+",
+            "market": "Winning margin (incl. overtime)",
+            "odds": 1.26,
+            "result": "won",
+            "score": "['22:25', '17:18', '18:23', '21:22']"
+          },
+          {
+            "match": "New York Liberty vs Indiana Fever",
+            "pick": "Away (+10.5)",
+            "market": "Handicap (incl. overtime) -10.5",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['33:26', '20:23', '32:29', '24:24']"
+          },
+          {
+            "match": "Dallas Wings vs Seattle Storm",
+            "pick": "Home",
+            "market": "Draw No Bet",
+            "odds": 1.27,
+            "result": "won",
+            "score": "['34:17', '22:18', '17:23', '19:12']"
+          },
+          {
+            "match": "Crivei, Eric vs Chou, Dylan",
+            "pick": "Home",
+            "market": "Winner",
+            "odds": 1.25,
+            "result": "won",
+            "score": "['4:6', '7:6', '6:3']"
+          },
+          {
+            "match": "Germany vs Croatia",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.27,
+            "result": "won",
+            "score": "['24:24', '26:15', '28:30', '18:18']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "G560N9",
@@ -6642,7 +7302,73 @@
           "sportId": "sr:sport:2"
         }
       ],
-      "result": null
+      "result": {
+        "status": "checked",
+        "won": 4,
+        "lost": 3,
+        "pending": 0,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Mogi das Cruzes vs SC Corinthians Paulista",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.38,
+            "result": "won",
+            "score": "['16:10', '35:18', '17:11', '19:16']"
+          },
+          {
+            "match": "FC Vizela vs Amarante FC",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.4,
+            "result": "lost",
+            "score": "['0:0', '0:0']"
+          },
+          {
+            "match": "Bulawayo Chiefs FC vs Caps United FC",
+            "pick": "Under 2.5",
+            "market": "Over/Under",
+            "odds": 1.38,
+            "result": "won",
+            "score": "['0:0', '0:0']"
+          },
+          {
+            "match": "EC Pinheiros SP vs Basquete Osasco",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.4,
+            "result": "won",
+            "score": "['25:10', '26:27', '24:17', '18:23']"
+          },
+          {
+            "match": "Chicago Sky vs Indiana Fever",
+            "pick": "Home (+9.5)",
+            "market": "Handicap (incl. overtime) 9.5",
+            "odds": 1.38,
+            "result": "lost",
+            "score": "['28:28', '23:22', '26:33', '13:30']"
+          },
+          {
+            "match": "FC Hunters vs Hardrock FC",
+            "pick": "Under 2.5",
+            "market": "Over/Under",
+            "odds": 1.4,
+            "result": "lost",
+            "score": "['1:0', '0:2']"
+          },
+          {
+            "match": "Los Angeles Sparks vs Connecticut Sun",
+            "pick": "Home (+3.5)",
+            "market": "Handicap (incl. overtime) 3.5",
+            "odds": 1.38,
+            "result": "won",
+            "score": "['32:22', '12:14', '22:10', '11:22']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
     },
     {
       "code": "ZDTS6W",
@@ -6756,9 +7482,1023 @@
           "sportId": "sr:sport:2"
         }
       ],
+      "result": {
+        "status": "checked",
+        "won": 5,
+        "lost": 2,
+        "pending": 0,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Toronto Tempo vs Las Vegas Aces",
+            "pick": "Away (-7.5)",
+            "market": "Handicap (incl. overtime) 7.5",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['22:25', '17:18', '18:23', '21:22']"
+          },
+          {
+            "match": "Hands T / Summers M vs Ayeni A / Poullain L",
+            "pick": "Home",
+            "market": "Winner",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['6:2', '7:6']"
+          },
+          {
+            "match": "Colon FC vs Montevideo Basket",
+            "pick": "Under 174.5",
+            "market": "Over/Under (incl. overtime) 174.5",
+            "odds": 1.46,
+            "result": "lost",
+            "score": "['32:21', '13:34', '23:22', '18:16']"
+          },
+          {
+            "match": "Germany vs Croatia",
+            "pick": "Over 173.5",
+            "market": "Over/Under (incl. overtime) 173.5",
+            "odds": 1.46,
+            "result": "won",
+            "score": "['24:24', '26:15', '28:30', '18:18']"
+          },
+          {
+            "match": "Lithuania vs Arizona Wildcats",
+            "pick": "Away (+10.5)",
+            "market": "Handicap (incl. overtime) -10.5",
+            "odds": 1.46,
+            "result": "won",
+            "score": "['15:23', '25:20', '15:26', '19:19']"
+          },
+          {
+            "match": "Jacques, Houston vs Ushizima, Henrique Hamamoto",
+            "pick": "Away",
+            "market": "Winner",
+            "odds": 1.51,
+            "result": "lost",
+            "score": "['3:6', '7:5', '6:4']"
+          },
+          {
+            "match": "Phoenix Mercury vs Atlanta Dream",
+            "pick": "Away",
+            "market": "Draw No Bet",
+            "odds": 1.45,
+            "result": "won",
+            "score": "['18:29', '17:21', '33:23', '21:26']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-25T20:12:21.546946+00:00"
+    },
+    {
+      "code": "KPK21X",
+      "target": 15,
+      "actual_odds": 15.14,
+      "date_saved": "2026-08-25T23:00:35.242555+00:00",
+      "picks": [
+        {
+          "homeTeam": "Stuttgart",
+          "awayTeam": "Cologne",
+          "tournament": "Bundesliga",
+          "marketDesc": "1X2",
+          "pickDesc": "Home",
+          "odds": 1.47,
+          "safetyScore": 0.53626721,
+          "eventId": "sr:match:72513166",
+          "marketId": "1",
+          "outcomeId": "1",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Brest",
+          "awayTeam": "Toulouse",
+          "tournament": "Ligue 1",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Draw or Away",
+          "odds": 1.47,
+          "safetyScore": 0.53100863655408,
+          "eventId": "sr:match:72036130",
+          "marketId": "10",
+          "outcomeId": "11",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Monaco",
+          "awayTeam": "Marseille",
+          "tournament": "Ligue 1",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Draw",
+          "odds": 1.47,
+          "safetyScore": 0.5287760906461201,
+          "eventId": "sr:match:72036138",
+          "marketId": "10",
+          "outcomeId": "9",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Mexico",
+          "awayTeam": "Colombia",
+          "tournament": "World Cup Qualification, Americas",
+          "marketDesc": "1X2",
+          "pickDesc": "Home",
+          "odds": 1.48,
+          "safetyScore": 0.5455300000000001,
+          "eventId": "sr:match:73311910",
+          "marketId": "1",
+          "outcomeId": "1",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:2"
+        },
+        {
+          "homeTeam": "Lyon",
+          "awayTeam": "Le Havre",
+          "tournament": "Ligue 1",
+          "marketDesc": "1X2",
+          "pickDesc": "Home",
+          "odds": 1.48,
+          "safetyScore": 0.507406905,
+          "eventId": "sr:match:72036136",
+          "marketId": "1",
+          "outcomeId": "1",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Real Madrid",
+          "awayTeam": "Real Sociedad",
+          "tournament": "LaLiga",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 2.5",
+          "odds": 1.46,
+          "safetyScore": 0.4959466678,
+          "eventId": "sr:match:72478460",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=2.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "FC Iberia 1999",
+          "awayTeam": "Jagiellonia Bialystok",
+          "tournament": "UEFA Europa League",
+          "marketDesc": "Draw No Bet",
+          "pickDesc": "Away",
+          "odds": 1.49,
+          "safetyScore": 0.518118741,
+          "eventId": "sr:match:73398352",
+          "marketId": "11",
+          "outcomeId": "5",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        }
+      ],
+      "result": {
+        "status": "checked",
+        "won": 0,
+        "lost": 0,
+        "pending": 7,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Stuttgart vs Cologne",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.47,
+            "result": "pending",
+            "status": "Not start"
+          },
+          {
+            "match": "Brest vs Toulouse",
+            "pick": "Draw or Away",
+            "market": "Double Chance",
+            "odds": 1.47,
+            "result": "pending",
+            "status": "Not start"
+          },
+          {
+            "match": "Monaco vs Marseille",
+            "pick": "Home or Draw",
+            "market": "Double Chance",
+            "odds": 1.47,
+            "result": "pending",
+            "status": "Not start"
+          },
+          {
+            "match": "Mexico vs Colombia",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.48,
+            "result": "pending",
+            "status": "Not start"
+          },
+          {
+            "match": "Lyon vs Le Havre",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.48,
+            "result": "pending",
+            "status": "Not start"
+          },
+          {
+            "match": "Real Madrid vs Real Sociedad",
+            "pick": "Over 2.5",
+            "market": "Over/Under",
+            "odds": 1.46,
+            "result": "pending",
+            "status": "H1"
+          },
+          {
+            "match": "FC Iberia 1999 vs Jagiellonia Bialystok",
+            "pick": "Away",
+            "market": "Draw No Bet",
+            "odds": 1.49,
+            "result": "pending",
+            "status": "Not start"
+          }
+        ]
+      },
+      "last_checked": "2026-08-26T19:49:17.709222+00:00"
+    },
+    {
+      "code": "UZXQW9",
+      "target": 5,
+      "actual_odds": 5.24,
+      "date_saved": "2026-08-26T15:00:37.619969+00:00",
+      "picks": [
+        {
+          "homeTeam": "Real Madrid",
+          "awayTeam": "Real Sociedad",
+          "tournament": "LaLiga",
+          "marketDesc": "1X2",
+          "pickDesc": "Home",
+          "odds": 1.26,
+          "safetyScore": 0.74297885,
+          "eventId": "sr:match:72478460",
+          "marketId": "1",
+          "outcomeId": "1",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Lyon",
+          "awayTeam": "Fenerbahce Istanbul",
+          "tournament": "UEFA Champions League",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 1.5",
+          "odds": 1.25,
+          "safetyScore": 0.8180109000000001,
+          "eventId": "sr:match:73394742",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=1.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Tottenham",
+          "awayTeam": "Charlton Athletic",
+          "tournament": "EFL Cup",
+          "marketDesc": "1X2",
+          "pickDesc": "Home",
+          "odds": 1.25,
+          "safetyScore": 0.4745232,
+          "eventId": "sr:match:73667682",
+          "marketId": "1",
+          "outcomeId": "1",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Sparta Prague",
+          "awayTeam": "Servette Geneva W",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Away",
+          "odds": 1.27,
+          "safetyScore": 0.32123994720480004,
+          "eventId": "sr:match:73655046",
+          "marketId": "10",
+          "outcomeId": "10",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "PSV Eindhoven",
+          "awayTeam": "HB KOEGE W",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Away",
+          "odds": 1.27,
+          "safetyScore": 0.320047295472,
+          "eventId": "sr:match:73655028",
+          "marketId": "10",
+          "outcomeId": "10",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Viking FK",
+          "awayTeam": "GNK Dinamo Zagreb",
+          "tournament": "UEFA Champions League",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Away",
+          "odds": 1.29,
+          "safetyScore": 0.7967641312800001,
+          "eventId": "sr:match:73394730",
+          "marketId": "10",
+          "outcomeId": "10",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Eintracht Frankfurt",
+          "awayTeam": "Paris Saint-Germain W",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Away",
+          "odds": 1.28,
+          "safetyScore": 0.316709136,
+          "eventId": "sr:match:73655036",
+          "marketId": "10",
+          "outcomeId": "10",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        }
+      ],
+      "result": {
+        "status": "checked",
+        "won": 2,
+        "lost": 1,
+        "pending": 4,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Real Madrid vs Real Sociedad",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.26,
+            "result": "pending",
+            "status": "H1"
+          },
+          {
+            "match": "Lyon vs Fenerbahce Istanbul",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.25,
+            "result": "pending",
+            "status": "HT"
+          },
+          {
+            "match": "Tottenham vs Charlton Athletic",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.25,
+            "result": "pending",
+            "status": "HT"
+          },
+          {
+            "match": "Sparta Prague vs Servette Geneva W",
+            "pick": "Home or Away",
+            "market": "Double Chance",
+            "odds": 1.27,
+            "result": "won",
+            "score": "['2:1', '1:1']"
+          },
+          {
+            "match": "PSV Eindhoven vs HB KOEGE W",
+            "pick": "Home or Away",
+            "market": "Double Chance",
+            "odds": 1.27,
+            "result": "won",
+            "score": "['0:1', '0:0']"
+          },
+          {
+            "match": "Viking FK vs GNK Dinamo Zagreb",
+            "pick": "Home or Away",
+            "market": "Double Chance",
+            "odds": 1.29,
+            "result": "pending",
+            "status": "HT"
+          },
+          {
+            "match": "Eintracht Frankfurt vs Paris Saint-Germain W",
+            "pick": "Home or Away",
+            "market": "Double Chance",
+            "odds": 1.28,
+            "result": "lost",
+            "score": "['1:1', '0:0']"
+          }
+        ]
+      },
+      "last_checked": "2026-08-26T19:49:17.709222+00:00"
+    },
+    {
+      "code": "T4WQVL",
+      "target": 10,
+      "actual_odds": 10.16,
+      "date_saved": "2026-08-26T15:00:37.619969+00:00",
+      "picks": [
+        {
+          "homeTeam": "Real Madrid",
+          "awayTeam": "Real Sociedad",
+          "tournament": "LaLiga",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 2.5",
+          "odds": 1.4,
+          "safetyScore": 0.5637313110000001,
+          "eventId": "sr:match:72478460",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=2.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Newcastle",
+          "awayTeam": "West Bromwich Albion",
+          "tournament": "EFL Cup",
+          "marketDesc": "1X2",
+          "pickDesc": "Home",
+          "odds": 1.4,
+          "safetyScore": 0.394518834,
+          "eventId": "sr:match:73667688",
+          "marketId": "1",
+          "outcomeId": "1",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "SKN St. Polten W",
+          "awayTeam": "Juventus Turin W",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "GG/NG",
+          "pickDesc": "No",
+          "odds": 1.4,
+          "safetyScore": 0.21883557696000006,
+          "eventId": "sr:match:73655038",
+          "marketId": "29",
+          "outcomeId": "76",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "NK Celje",
+          "awayTeam": "Slovan Bratislava",
+          "tournament": "UEFA Champions League",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Draw",
+          "odds": 1.36,
+          "safetyScore": 0.7027402782726001,
+          "eventId": "sr:match:73394734",
+          "marketId": "10",
+          "outcomeId": "9",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "AEK Athens",
+          "awayTeam": "PFC Levski Sofia",
+          "tournament": "UEFA Champions League",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 1.5",
+          "odds": 1.36,
+          "safetyScore": 0.6957044955000001,
+          "eventId": "sr:match:73394628",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=1.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Chelsea FC W",
+          "awayTeam": "Real Sociedad San Sebastian",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 2.5",
+          "odds": 1.41,
+          "safetyScore": 0.23040486624000003,
+          "eventId": "sr:match:73655042",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=2.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Al Ahli Saudi FC",
+          "awayTeam": "Auckland FC",
+          "tournament": "FIFA Intercontinental Cup",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 2.5",
+          "odds": 1.42,
+          "safetyScore": 0.34797542904,
+          "eventId": "sr:match:73927730",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=2.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        }
+      ],
+      "result": {
+        "status": "checked",
+        "won": 1,
+        "lost": 0,
+        "pending": 6,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Real Madrid vs Real Sociedad",
+            "pick": "Over 2.5",
+            "market": "Over/Under",
+            "odds": 1.4,
+            "result": "pending",
+            "status": "H1"
+          },
+          {
+            "match": "Newcastle vs West Bromwich Albion",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.4,
+            "result": "pending",
+            "status": "H2"
+          },
+          {
+            "match": "SKN St. Polten W vs Juventus Turin W",
+            "pick": "No",
+            "market": "GG/NG",
+            "odds": 1.4,
+            "result": "pending",
+            "status": "H2"
+          },
+          {
+            "match": "NK Celje vs Slovan Bratislava",
+            "pick": "Home or Draw",
+            "market": "Double Chance",
+            "odds": 1.36,
+            "result": "pending",
+            "status": "HT"
+          },
+          {
+            "match": "AEK Athens vs PFC Levski Sofia",
+            "pick": "Over 1.5",
+            "market": "Over/Under",
+            "odds": 1.36,
+            "result": "pending",
+            "status": "HT"
+          },
+          {
+            "match": "Chelsea FC W vs Real Sociedad San Sebastian",
+            "pick": "Over 2.5",
+            "market": "Over/Under",
+            "odds": 1.41,
+            "result": "won",
+            "score": "['1:1', '4:1']"
+          },
+          {
+            "match": "Al Ahli Saudi FC vs Auckland FC",
+            "pick": "Over 2.5",
+            "market": "Over/Under",
+            "odds": 1.42,
+            "result": "pending",
+            "status": "H2"
+          }
+        ]
+      },
+      "last_checked": "2026-08-26T19:49:17.709222+00:00"
+    },
+    {
+      "code": "VU2T90",
+      "target": 15,
+      "actual_odds": 15.03,
+      "date_saved": "2026-08-26T15:00:37.619969+00:00",
+      "picks": [
+        {
+          "homeTeam": "Eintracht Frankfurt",
+          "awayTeam": "Paris Saint-Germain W",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Draw or Away",
+          "odds": 1.47,
+          "safetyScore": 0.228290076,
+          "eventId": "sr:match:73655036",
+          "marketId": "10",
+          "outcomeId": "11",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Ajax Amsterdam",
+          "awayTeam": "Real Madrid W",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 2.5",
+          "odds": 1.47,
+          "safetyScore": 0.20254724542960004,
+          "eventId": "sr:match:73655044",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=2.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "SKN St. Polten W",
+          "awayTeam": "Juventus Turin W",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "Handicap 1:0",
+          "pickDesc": "Away (1:0)",
+          "odds": 1.47,
+          "safetyScore": 0.18885922880000003,
+          "eventId": "sr:match:73655038",
+          "marketId": "14",
+          "outcomeId": "1713",
+          "specifier": "hcp=1:0",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "AEK Athens",
+          "awayTeam": "PFC Levski Sofia",
+          "tournament": "UEFA Champions League",
+          "marketDesc": "1X2",
+          "pickDesc": "Home",
+          "odds": 1.48,
+          "safetyScore": 0.5583582,
+          "eventId": "sr:match:73394628",
+          "marketId": "1",
+          "outcomeId": "1",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Chelsea FC W",
+          "awayTeam": "Real Sociedad San Sebastian",
+          "tournament": "UEFA Champions League Women",
+          "marketDesc": "Handicap 0:3",
+          "pickDesc": "Away (0:3)",
+          "odds": 1.48,
+          "safetyScore": 0.1878578064,
+          "eventId": "sr:match:73655042",
+          "marketId": "14",
+          "outcomeId": "1713",
+          "specifier": "hcp=0:3",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Viking FK",
+          "awayTeam": "GNK Dinamo Zagreb",
+          "tournament": "UEFA Champions League",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Draw",
+          "odds": 1.45,
+          "safetyScore": 0.6526015513074,
+          "eventId": "sr:match:73394730",
+          "marketId": "10",
+          "outcomeId": "9",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Newcastle",
+          "awayTeam": "West Bromwich Albion",
+          "tournament": "EFL Cup",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 2.5",
+          "odds": 1.49,
+          "safetyScore": 0.30482412425280003,
+          "eventId": "sr:match:73667688",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=2.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        }
+      ],
+      "result": {
+        "status": "checked",
+        "won": 1,
+        "lost": 2,
+        "pending": 4,
+        "total": 7,
+        "slip_won": false,
+        "picks": [
+          {
+            "match": "Eintracht Frankfurt vs Paris Saint-Germain W",
+            "pick": "Draw or Away",
+            "market": "Double Chance",
+            "odds": 1.47,
+            "result": "won",
+            "score": "['1:1', '0:0']"
+          },
+          {
+            "match": "Ajax Amsterdam vs Real Madrid W",
+            "pick": "Over 2.5",
+            "market": "Over/Under",
+            "odds": 1.47,
+            "result": "lost",
+            "score": "['0:1', '0:1']"
+          },
+          {
+            "match": "SKN St. Polten W vs Juventus Turin W",
+            "pick": "Away (1:0)",
+            "market": "Handicap 1:0",
+            "odds": 1.47,
+            "result": "pending",
+            "status": "H2"
+          },
+          {
+            "match": "AEK Athens vs PFC Levski Sofia",
+            "pick": "Home",
+            "market": "1X2",
+            "odds": 1.48,
+            "result": "pending",
+            "status": "HT"
+          },
+          {
+            "match": "Chelsea FC W vs Real Sociedad San Sebastian",
+            "pick": "Away (0:3)",
+            "market": "Handicap 0:3",
+            "odds": 1.48,
+            "result": "lost",
+            "score": "['1:1', '4:1']"
+          },
+          {
+            "match": "Viking FK vs GNK Dinamo Zagreb",
+            "pick": "Home or Draw",
+            "market": "Double Chance",
+            "odds": 1.45,
+            "result": "pending",
+            "status": "HT"
+          },
+          {
+            "match": "Newcastle vs West Bromwich Albion",
+            "pick": "Over 2.5",
+            "market": "Over/Under",
+            "odds": 1.49,
+            "result": "pending",
+            "status": "H2"
+          }
+        ]
+      },
+      "last_checked": "2026-08-26T19:49:17.709222+00:00"
+    },
+    {
+      "code": "K5WG1N",
+      "target": 5,
+      "actual_odds": 5,
+      "date_saved": "2026-09-01T20:51:03.747180+00:00",
+      "picks": [
+        {
+          "homeTeam": "Swansea City",
+          "awayTeam": "Watford",
+          "tournament": "Championship",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Draw",
+          "odds": 1.26,
+          "safetyScore": 0.6596675125920001,
+          "eventId": "sr:match:72339756",
+          "marketId": "10",
+          "outcomeId": "9",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Harkemase Boys",
+          "awayTeam": "Excelsior \u00b431",
+          "tournament": "KNVB beker",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Away",
+          "odds": 1.26,
+          "safetyScore": 0.48901575104640005,
+          "eventId": "sr:match:73549806",
+          "marketId": "10",
+          "outcomeId": "10",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Sheffield United",
+          "awayTeam": "Bolton Wanderers",
+          "tournament": "Championship",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Away",
+          "odds": 1.25,
+          "safetyScore": 0.6621003777888,
+          "eventId": "sr:match:72339752",
+          "marketId": "10",
+          "outcomeId": "10",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Birmingham City",
+          "awayTeam": "Southampton",
+          "tournament": "Championship",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 1.5",
+          "odds": 1.25,
+          "safetyScore": 0.65663892,
+          "eventId": "sr:match:72339744",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=1.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "SC Genemuiden",
+          "awayTeam": "FC Lisse",
+          "tournament": "KNVB beker",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Away",
+          "odds": 1.27,
+          "safetyScore": 0.48820579199999997,
+          "eventId": "sr:match:73549856",
+          "marketId": "10",
+          "outcomeId": "10",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Stoke City",
+          "awayTeam": "Norwich",
+          "tournament": "Championship",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 1.5",
+          "odds": 1.25,
+          "safetyScore": 0.65450448,
+          "eventId": "sr:match:72339754",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=1.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "AFC '34",
+          "awayTeam": "VV Scherpenzeel",
+          "tournament": "KNVB beker",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Draw or Away",
+          "odds": 1.27,
+          "safetyScore": 0.48662679925440006,
+          "eventId": "sr:match:73549842",
+          "marketId": "10",
+          "outcomeId": "11",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        }
+      ],
+      "result": null
+    },
+    {
+      "code": "PBV9QV",
+      "target": 10,
+      "actual_odds": 9.8,
+      "date_saved": "2026-09-01T20:51:03.747180+00:00",
+      "picks": [
+        {
+          "homeTeam": "BK Opava",
+          "awayTeam": "MKS Dabrowa Gornicza",
+          "tournament": "Club Friendly Games",
+          "marketDesc": "Draw No Bet",
+          "pickDesc": "Away",
+          "odds": 1.4,
+          "safetyScore": 0.28004578686000003,
+          "eventId": "sr:match:74237358",
+          "marketId": "11",
+          "outcomeId": "5",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:2"
+        },
+        {
+          "homeTeam": "Lincoln City",
+          "awayTeam": "Blackburn Rovers",
+          "tournament": "Championship",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Home or Draw",
+          "odds": 1.37,
+          "safetyScore": 0.5589365472000001,
+          "eventId": "sr:match:72339746",
+          "marketId": "10",
+          "outcomeId": "9",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "AFC '34",
+          "awayTeam": "VV Scherpenzeel",
+          "tournament": "KNVB beker",
+          "marketDesc": "Draw No Bet",
+          "pickDesc": "Away",
+          "odds": 1.41,
+          "safetyScore": 0.3993968979,
+          "eventId": "sr:match:73549842",
+          "marketId": "11",
+          "outcomeId": "5",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Stoke City",
+          "awayTeam": "Norwich",
+          "tournament": "Championship",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 2",
+          "odds": 1.37,
+          "safetyScore": 0.4489085076,
+          "eventId": "sr:match:72339754",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=2",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Sheffield United",
+          "awayTeam": "Bolton Wanderers",
+          "tournament": "Championship",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 2",
+          "odds": 1.37,
+          "safetyScore": 0.4485986316,
+          "eventId": "sr:match:72339752",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=2",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Preston North End",
+          "awayTeam": "Bristol City",
+          "tournament": "Championship",
+          "marketDesc": "Double Chance",
+          "pickDesc": "Draw or Away",
+          "odds": 1.42,
+          "safetyScore": 0.5360613466815362,
+          "eventId": "sr:match:72339750",
+          "marketId": "10",
+          "outcomeId": "11",
+          "specifier": null,
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        },
+        {
+          "homeTeam": "Torino",
+          "awayTeam": "Monza",
+          "tournament": "Coppa Italia",
+          "marketDesc": "Over/Under",
+          "pickDesc": "Over 1.5",
+          "odds": 1.36,
+          "safetyScore": 0.41881739879511004,
+          "eventId": "sr:match:73786060",
+          "marketId": "18",
+          "outcomeId": "12",
+          "specifier": "total=1.5",
+          "productId": 3,
+          "sportId": "sr:sport:1"
+        }
+      ],
       "result": null
     }
   ],
-  "last_save": "2026-08-22T15:00:49.336479+00:00",
-  "last_check": "2026-08-17T19:00:49.608865+00:00"
+  "last_save": "2026-09-01T20:51:03.747180+00:00",
+  "last_check": "2026-08-27T19:22:01.278330+00:00"
 }

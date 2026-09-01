@@ -179,7 +179,7 @@ function marketFavorability(marketDesc: string, specifier?: string): number {
     if (specifier?.includes("total=2.5")) return 0.92;
     return 0.85;
   }
-  if (d.includes("both teams to score")) return 0.85;
+  if (d.includes("gg/ng")) return 0.85;
   if (d.includes("win either half")) return 0.82;
   if (d.includes("1st half") || d.includes("2nd half")) return 0.75;
   if (d.includes("goal bounds")) return 0.70;
