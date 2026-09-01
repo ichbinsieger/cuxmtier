@@ -87,12 +87,30 @@ const SPORTS_TO_SCAN = [
   { id: "sr:sport:21", name: "Cricket" },
 ];
 
-// Odds range for "safe" picks
-const MIN_ODDS = 1.05;
-const MAX_ODDS = 1.70;
+// Odds range for "safe" picks. The 1.70+ band historically hits ~27% and
+// drags every accumulator down, so the ceiling is 1.50. The floor skips
+// sub-1.18 legs that add nothing but a chance to fail.
+const MIN_ODDS = 1.18;
+const MAX_ODDS = 1.50;
 
 // Accumulator targets
 const TARGETS = [5, 10, 15];
+
+// Markets that are genuinely "safe" (hit ≥~60% historically) and markets to
+// reject outright. 1X2 (~44%) and Draw No Bet (~53%) look safe but lose to
+// the bookmaker margin — they're excluded so they can't poison a slip.
+const SAFE_MARKETS = new Set([
+  "double chance",
+  "over/under",
+  "handicap 0:1",
+  "handicap 0:2",
+  "gg/ng",
+]);
+const REJECT_MARKETS = new Set([
+  "1x2",
+  "draw no bet",
+  "odd/even",
+]);
 
 // ── Same-day filter ────────────────────────────────────────────────
 // Only consider matches that kick off today (Africa/Lagos time). Betting
@@ -261,12 +279,18 @@ export async function collectSafePicks(): Promise<SafePick[]> {
         if (leagueWeight(event.sport.category.tournament.name, event.sport.category.name) === 0) continue;
 
         for (const market of event.markets) {
+          const marketKey = market.desc.toLowerCase().trim();
+          // Reject proven-losing markets outright (1X2 ~44%, Draw No Bet ~53%).
+          if (REJECT_MARKETS.has(marketKey)) continue;
+          // Only accept markets we know are genuinely safe.
+          if (!SAFE_MARKETS.has(marketKey)) continue;
+
           for (const outcome of market.outcomes) {
             const odds = parseFloat(outcome.odds);
             if (odds < MIN_ODDS || odds > MAX_ODDS) continue;
 
             const safety = scorePick(event, market, outcome);
-            if (safety < 0.08) continue; // too risky
+            if (safety < 0.50) continue; // require genuine safety, not a coin flip
 
             allPicks.push({
               eventId: event.eventId,
@@ -406,14 +430,14 @@ function toSportySelection(p: SafePick): SportySelection {
 // ── Public API ──────────────────────────────────────────────────
 
 const TARGET_CONFIG: Record<number, { minGames: number; maxGames: number }> = {
-  5: { minGames: 5, maxGames: 7 },
-  10: { minGames: 5, maxGames: 7 },
-  15: { minGames: 5, maxGames: 7 },
+  5: { minGames: 4, maxGames: 5 },
+  10: { minGames: 5, maxGames: 6 },
+  15: { minGames: 6, maxGames: 7 },
 };
 const TARGET_FILTERS: Record<number, { minOdds: number; maxOdds: number }> = {
-  5: { minOdds: 1.25, maxOdds: 1.65 },
-  10: { minOdds: 1.35, maxOdds: 1.90 },
-  15: { minOdds: 1.45, maxOdds: 2.15 },
+  5: { minOdds: 1.20, maxOdds: 1.50 },
+  10: { minOdds: 1.28, maxOdds: 1.50 },
+  15: { minOdds: 1.38, maxOdds: 1.50 },
 };
 
 function filterForTarget(picks: SafePick[], target: number): SafePick[] {
