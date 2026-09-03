@@ -143,30 +143,48 @@ export async function getStoredData() {
   const slips: RecommendedSlip[] = [];
   const results: Record<string, { won: number; lost: number; pending: number; picks: Array<{ result: string }> }> = {};
 
+  // A slip is only a *current* recommendation while its matches are still
+  // today (Lagos). The same-day filter guarantees picks kick off on the day
+  // the batch was generated, so anything generated on a previous Lagos day
+  // references matches that have already kicked off — surface nothing rather
+  // than showing "already played" games as if they were live picks.
+  const lagosDayFmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const isTodayLagos = (iso: string) =>
+    lagosDayFmt.format(new Date(iso)) === lagosDayFmt.format(new Date());
+
   if (rows.length > 0) {
-    // Safe slips: latest batch only, sorted by target odds
+    // Safe slips: latest batch only, sorted by target odds, and only if that
+    // batch was generated today.
     const safeRows = rows.filter((r) => r.kind !== "draw");
 
     if (safeRows.length > 0) {
       const latestBatch = safeRows[0].batch_id;
-      const latestRows = safeRows.filter((r) => r.batch_id === latestBatch);
-      latestRows.sort((a, b) => Number(a.target_odds) - Number(b.target_odds));
-      for (const r of latestRows) {
-        slips.push({
-          targetOdds: Number(r.target_odds),
-          actualOdds: Number(r.actual_odds),
-          code: r.code,
-          picks: r.picks,
-        });
-        if (r.result) results[r.code] = r.result;
+      if (isTodayLagos(safeRows[0].created_at)) {
+        const latestRows = safeRows.filter((r) => r.batch_id === latestBatch);
+        latestRows.sort((a, b) => Number(a.target_odds) - Number(b.target_odds));
+        for (const r of latestRows) {
+          slips.push({
+            targetOdds: Number(r.target_odds),
+            actualOdds: Number(r.actual_odds),
+            code: r.code,
+            picks: r.picks,
+          });
+          if (r.result) results[r.code] = r.result;
+        }
       }
     }
   }
 
-  // Resolve the latest draw slip separately (kept fresh regardless of batch)
+  // Resolve the latest draw slip separately (kept fresh regardless of batch),
+  // but apply the same staleness guard so yesterday's draws don't linger.
   let drawSlip: RecommendedSlip | null = null;
   const latestDraw = rows.find((r) => r.kind === "draw");
-  if (latestDraw) {
+  if (latestDraw && isTodayLagos(latestDraw.created_at)) {
     drawSlip = {
       targetOdds: Number(latestDraw.target_odds),
       actualOdds: Number(latestDraw.actual_odds),
