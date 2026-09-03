@@ -170,7 +170,7 @@ export async function getStoredData() {
   if (rows.length > 0) {
     // Safe slips: latest batch only, sorted by target odds, and only if that
     // batch was generated today.
-    const safeRows = rows.filter((r) => r.kind !== "draw");
+    const safeRows = rows.filter((r) => r.kind === "safe");
 
     if (safeRows.length > 0) {
       const latestBatch = safeRows[0].batch_id;
