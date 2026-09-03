@@ -6,7 +6,7 @@
 //   - /api/cron      (Vercel Cron: generate on an interval + check results)
 //   - /api/recommend (serves the persisted slips/results to the client)
 
-import { getRecommendations, getDrawRecommendation, RecommendedSlip } from "./recommend";
+import { getRecommendations, getDrawRecommendation, getRiskyRecommendation, RecommendedSlip } from "./recommend";
 import { fetchBookCode } from "./sportybet";
 import { query } from "./db";
 
@@ -83,8 +83,9 @@ export async function generateAndStore(force = false): Promise<number> {
 
   const slips = await getRecommendations();
   const drawSlip = await getDrawRecommendation();
+  const riskySlip = await getRiskyRecommendation();
 
-  if (slips.length === 0 && !drawSlip) return 0;
+  if (slips.length === 0 && !drawSlip && !riskySlip) return 0;
 
   const batchId = new Date().toISOString();
   for (const slip of slips) {
@@ -105,7 +106,16 @@ export async function generateAndStore(force = false): Promise<number> {
     );
   }
 
-  return slips.length + (drawSlip ? 1 : 0);
+  if (riskySlip) {
+    await query(
+      `INSERT INTO recommendations (code, batch_id, target_odds, actual_odds, kind, picks)
+       VALUES ($1, $2, $3, $4, 'risky', $5)
+       ON CONFLICT (code) DO NOTHING`,
+      [riskySlip.code, batchId, riskySlip.targetOdds, riskySlip.actualOdds, JSON.stringify(riskySlip.picks)]
+    );
+  }
+
+  return slips.length + (drawSlip ? 1 : 0) + (riskySlip ? 1 : 0);
 }
 
 // Check every not-fully-resolved slip and update its result in the DB.
@@ -194,6 +204,19 @@ export async function getStoredData() {
     if (latestDraw.result) results[latestDraw.code] = latestDraw.result;
   }
 
+  // Risky fallback slip — served when the safe tiers come up empty.
+  let riskySlip: RecommendedSlip | null = null;
+  const latestRisky = rows.find((r) => r.kind === "risky");
+  if (latestRisky && isTodayLagos(latestRisky.created_at)) {
+    riskySlip = {
+      targetOdds: Number(latestRisky.target_odds),
+      actualOdds: Number(latestRisky.actual_odds),
+      code: latestRisky.code,
+      picks: latestRisky.picks,
+    };
+    if (latestRisky.result) results[latestRisky.code] = latestRisky.result;
+  }
+
   const history = rows.map((r) => ({
     code: r.code,
     kind: r.kind,
@@ -211,5 +234,5 @@ export async function getStoredData() {
     checkedAt: r.checked_at ? new Date(r.checked_at).getTime() : undefined,
   }));
 
-  return { slips, draw: drawSlip, results, history };
+  return { slips, draw: drawSlip, risky: riskySlip, results, history };
 }

@@ -141,6 +141,7 @@ export default function Home() {
   const [showSlipHistory, setShowSlipHistory] = useState(false);
   const [recommendations, setRecommendations] = useState<RecommendedSlip[]>([]);
   const [drawSlip, setDrawSlip] = useState<RecommendedSlip | null>(null);
+  const [riskySlip, setRiskySlip] = useState<RecommendedSlip | null>(null);
   const [recsLoading, setRecsLoading] = useState(true);
   const [recsError, setRecsError] = useState("");
   const [recResults, setRecResults] = useState<Record<string, { won: number; lost: number; pending: number; picks: Array<{ result: "won" | "lost" | "pending" }> }>>({});
@@ -163,6 +164,7 @@ export default function Home() {
           if (r.ok && d.slips) {
             setRecommendations(d.slips);
             setDrawSlip(d.draw || null);
+            setRiskySlip(d.risky || null);
             setRecResults(d.results || {});
             const hist: HistoryEntry[] = (d.history || []).map((h: any) => ({
               code: h.code,
@@ -198,6 +200,7 @@ export default function Home() {
   // Auto-check recommendation results (safe + draw)
   const checkRecResults = async () => {
     const slips = drawSlip ? [...recommendations, drawSlip] : recommendations;
+    if (riskySlip) slips.push(riskySlip);
     if (checkingResults || slips.length === 0) return;
     setCheckingResults(true);
     const results: typeof recResults = {};
@@ -613,8 +616,9 @@ export default function Home() {
               </div>
             )}
 
-            {!recsLoading && recommendations.length > 0 && (
+            {!recsLoading && (recommendations.length > 0 || drawSlip || riskySlip) && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                {recommendations.length > 0 && (<>
                 <div className="flex items-center justify-between gap-3 mb-5">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -699,6 +703,78 @@ export default function Home() {
                     );
                   })}
                 </div>
+                </>)}
+
+                {recommendations.length === 0 && (
+                  <div className="mb-5 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-center">
+                    <p className="text-sm font-semibold text-white/45">Nothing safe today</p>
+                    <p className="text-[11px] text-white/25 mt-1">Not enough same-day matches cleared the safe bar — see the risky pick below.</p>
+                  </div>
+                )}
+
+                {/* ── RISKY FALLBACK ── */}
+                {riskySlip && (
+                  <div className="mb-6 relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500/[0.08] via-transparent to-red-500/[0.06] border border-orange-500/25 p-6">
+                    <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-orange-500/[0.12] blur-[90px] pointer-events-none" />
+                    <div className="relative">
+                      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">⚠️</span>
+                          <div>
+                            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-orange-400">Risky Pick · {riskySlip.actualOdds}×</h2>
+                            <p className="text-[11px] text-white/35 mt-0.5">{riskySlip.picks.length} games — moderate risk (safe bar not met)</p>
+                          </div>
+                        </div>
+                        {(() => {
+                          const res = recResults[riskySlip.code];
+                          const st = slipStatus(res, riskySlip.picks.length);
+                          if (st.won) return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300">✓ WON</span>;
+                          if (st.lost) return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500/15 text-red-300">✗ LOST</span>;
+                          return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white/[0.05] text-white/40">⏳ pending</span>;
+                        })()}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-5">
+                        {riskySlip.picks.map((p, j) => {
+                          const pr = recResults[riskySlip.code]?.picks[j];
+                          const pickWon = pr?.result === "won";
+                          const pickLost = pr?.result === "lost";
+                          return (
+                            <div key={j} className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 bg-black/20 border border-white/[0.04] ${
+                              pickWon ? "border-emerald-500/30" : pickLost ? "border-red-500/25 opacity-60" : ""
+                            }`}>
+                              <div className="min-w-0">
+                                <p className={`text-xs truncate ${pickLost ? "text-white/30 line-through" : "text-white/70"}`}>
+                                  {pr && <span className="mr-1">{pickWon ? "✅" : pickLost ? "❌" : ""}</span>}
+                                  {p.homeTeam} <span className="text-white/15">vs</span> {p.awayTeam}
+                                </p>
+                                <p className="text-[10px] text-white/30 truncate">{p.marketDesc} — {p.pickDesc} · {p.tournament}</p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-sm font-bold text-orange-400">@{p.odds}</span>
+                                <p className="text-[9px] text-white/30">{Math.round(p.probability * 100)}%</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-xs font-mono tracking-[0.08em] text-orange-200/60 bg-black/30 rounded-xl px-3 py-2.5 truncate">
+                          {riskySlip.code}
+                        </code>
+                        <button onClick={() => copy(riskySlip.code)}
+                          className={`shrink-0 px-4 py-2.5 rounded-xl text-[11px] font-semibold transition-all ${
+                            copied === riskySlip.code
+                              ? "bg-orange-500/25 text-orange-200"
+                              : "bg-orange-500/15 border border-orange-500/30 text-orange-300 hover:bg-orange-500/25"
+                          }`}>
+                          {copied === riskySlip.code ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* ── RISKY DRAW ── */}
                 {drawSlip && (

@@ -488,6 +488,126 @@ export async function getRecommendations(): Promise<RecommendedSlip[]> {
   return results;
 }
 
+// ── Risky Fallback (target ~20x) ───────────────────────────────────
+//
+// When there aren't enough *safe* picks to build the 5x/10x/15x slips
+// (thin fixture days), build a single moderate-risk accumulator instead.
+// It relaxes the safe-tier restrictions — re-adds 1X2 / Draw No Bet, allows
+// odds up to 2.00 and a lower safety floor — so it can still build a slip
+// from a handful of same-day matches. Clearly labelled "risky" on the client
+// so it's never confused with the proven safe tiers.
+
+const RISKY_TARGET = 20;
+const RISKY_MIN_ODDS = 1.35;
+const RISKY_MAX_ODDS = 2.00;
+const RISKY_MIN_SAFETY = 0.30;
+
+// Proven safe markets + the higher-risk markets we deliberately exclude from
+// the safe tiers. The risky tier is allowed to reach for these precisely
+// because it's flagged as risky.
+const RISKY_MARKETS = new Set([
+  "double chance",
+  "over/under",
+  "handicap 0:1",
+  "handicap 0:2",
+  "gg/ng",
+  "1x2",
+  "draw no bet",
+]);
+
+async function collectRiskyPicks(): Promise<SafePick[]> {
+  const allPicks: SafePick[] = [];
+  // Football only — 1X2/DNB only exist there, and it keeps the risky tier
+  // grounded in the sport our model understands best.
+  const groups = await fetchSportEvents("sr:sport:1");
+
+  for (const tournament of groups) {
+    for (const event of tournament.events) {
+      if (event.matchStatus !== "Not start") continue;
+      if (!isSameDay(event.estimateStartTime)) continue;
+      if (leagueWeight(event.sport.category.tournament.name, event.sport.category.name) === 0) continue;
+
+      for (const market of event.markets) {
+        const marketKey = market.desc.toLowerCase().trim();
+        if (!RISKY_MARKETS.has(marketKey)) continue;
+
+        for (const outcome of market.outcomes) {
+          const odds = parseFloat(outcome.odds);
+          if (odds < RISKY_MIN_ODDS || odds > RISKY_MAX_ODDS) continue;
+
+          const safety = scorePick(event, market, outcome);
+          if (safety < RISKY_MIN_SAFETY) continue;
+
+          allPicks.push({
+            eventId: event.eventId,
+            marketId: market.id,
+            outcomeId: outcome.id,
+            specifier: market.specifier || undefined,
+            productId: market.product,
+            sportId: event.sport.id,
+            homeTeam: event.homeTeamName,
+            awayTeam: event.awayTeamName,
+            tournament: event.sport.category.tournament.name,
+            marketDesc: market.desc,
+            pickDesc: outcome.desc,
+            odds,
+            probability: parseFloat(outcome.probability || "0"),
+            safetyScore: safety,
+          });
+        }
+      }
+    }
+  }
+
+  allPicks.sort((a, b) => b.safetyScore - a.safetyScore);
+  return allPicks;
+}
+
+function buildRiskySlip(picks: SafePick[]): SafePick[] | null {
+  // One leg per event. A risky slip needs legs priced high enough to reach
+  // ~20x, so prefer the highest-odds pick per event (all picks have already
+  // passed the safety floor + odds cap) rather than the single safest.
+  const bestPerEvent = new Map<string, SafePick>();
+  for (const p of picks) {
+    const existing = bestPerEvent.get(p.eventId);
+    if (!existing || p.odds > existing.odds) bestPerEvent.set(p.eventId, p);
+  }
+  const unique = Array.from(bestPerEvent.values());
+  unique.sort((a, b) => b.safetyScore - a.safetyScore);
+
+  if (unique.length < 4) return null;
+
+  const slip: SafePick[] = [];
+  let combined = 1;
+  for (const p of unique) {
+    if (slip.length >= 6) break;
+    const next = combined * p.odds;
+    if (slip.length >= 4 && next > 40) continue; // don't overshoot
+    slip.push(p);
+    combined = next;
+    if (slip.length >= 4 && combined >= 14) break;
+  }
+  if (slip.length < 4) return null;
+  return slip;
+}
+
+export async function getRiskyRecommendation(): Promise<RecommendedSlip | null> {
+  const picks = await collectRiskyPicks();
+  if (picks.length < 4) return null;
+
+  const slip = buildRiskySlip(picks);
+  if (!slip) return null;
+
+  try {
+    const code = await createBookCode(slip.map(toSportySelection));
+    const actualOdds = Math.round(slip.reduce((p, s) => p * s.odds, 1) * 100) / 100;
+    return { targetOdds: RISKY_TARGET, actualOdds, code, picks: slip };
+  } catch (e) {
+    console.error("Failed to create risky code:", e);
+    return null;
+  }
+}
+
 // ── Risky Draw Accumulator (target ~1000x) ────────────────────────
 //
 // Builds a single high-risk, high-reward slip made entirely of 1X2 "Draw"
