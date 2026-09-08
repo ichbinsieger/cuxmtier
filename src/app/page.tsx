@@ -142,6 +142,7 @@ export default function Home() {
   const [recommendations, setRecommendations] = useState<RecommendedSlip[]>([]);
   const [drawSlip, setDrawSlip] = useState<RecommendedSlip | null>(null);
   const [riskySlip, setRiskySlip] = useState<RecommendedSlip | null>(null);
+  const [daySlip, setDaySlip] = useState<RecommendedSlip | null>(null);
   const [recsLoading, setRecsLoading] = useState(true);
   const [recsError, setRecsError] = useState("");
   const [recResults, setRecResults] = useState<Record<string, { won: number; lost: number; pending: number; picks: Array<{ result: "won" | "lost" | "pending" }> }>>({});
@@ -150,6 +151,7 @@ export default function Home() {
   const RESULTS_PER_PAGE = 10;
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [dbHistory, setDbHistory] = useState<HistoryEntry[]>([]);
+  const [showDayAll, setShowDayAll] = useState(false);
 
   useEffect(() => { setHistory(loadHistory()); }, []);
 
@@ -165,6 +167,7 @@ export default function Home() {
             setRecommendations(d.slips);
             setDrawSlip(d.draw || null);
             setRiskySlip(d.risky || null);
+            setDaySlip(d.day || null);
             setRecResults(d.results || {});
             const hist: HistoryEntry[] = (d.history || []).map((h: any) => ({
               code: h.code,
@@ -201,6 +204,7 @@ export default function Home() {
   const checkRecResults = async () => {
     const slips = drawSlip ? [...recommendations, drawSlip] : recommendations;
     if (riskySlip) slips.push(riskySlip);
+    if (daySlip) slips.push(daySlip);
     if (checkingResults || slips.length === 0) return;
     setCheckingResults(true);
     const results: typeof recResults = {};
@@ -479,6 +483,14 @@ export default function Home() {
   const volColor = (v: number) => v > 200 ? "text-red-400" : v > 100 ? "text-amber-400" : v > 50 ? "text-lime-400" : "text-emerald-400";
   const failColor = (f: number) => f > 80 ? "text-red-400" : f > 60 ? "text-amber-400" : f > 40 ? "text-lime-400" : "text-emerald-400";
 
+  // Format astronomically large combined odds (e.g. 250 legs → 10^28) sanely.
+  const fmtCombined = (o: number) => {
+    if (!isFinite(o)) return "∞";
+    if (o >= 1e12) return o.toExponential(2).replace("e+", " × 10^");
+    if (o >= 1e6) return `${(o / 1e6).toFixed(2)}M`;
+    return o.toFixed(2);
+  };
+
   // Result summary for a slip
   const slipStatus = (res?: { won: number; lost: number; pending: number }, total?: number) => {
     if (!res) return { resolved: false, won: false, lost: false, pending: true };
@@ -616,7 +628,7 @@ export default function Home() {
               </div>
             )}
 
-            {!recsLoading && (recommendations.length > 0 || drawSlip || riskySlip) && (
+            {!recsLoading && (recommendations.length > 0 || drawSlip || riskySlip || daySlip) && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 {recommendations.length > 0 && (<>
                 <div className="flex items-center justify-between gap-3 mb-5">
@@ -836,6 +848,77 @@ export default function Home() {
                           {copied === drawSlip.code ? "Copied" : "Copy"}
                         </button>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── DAY SWEEP (all 1.2–1.4 picks) ── */}
+                {daySlip && (
+                  <div className="mt-6 relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500/[0.08] via-transparent to-blue-500/[0.06] border border-sky-500/25 p-6">
+                    <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-sky-500/[0.12] blur-[90px] pointer-events-none" />
+                    <div className="relative">
+                      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">🌊</span>
+                          <div>
+                            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-sky-400">Day Sweep · every 1.2–1.4 pick</h2>
+                            <p className="text-[11px] text-white/35 mt-0.5">
+                              {daySlip.picks.length} games — one high-probability leg per match, all bundled into a single code
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-sky-500/10 text-sky-300/80 tabular-nums">
+                            {fmtCombined(daySlip.actualOdds)}× combined
+                          </span>
+                          {(() => {
+                            const res = recResults[daySlip.code];
+                            const st = slipStatus(res, daySlip.picks.length);
+                            if (st.won) return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300">✓ WON</span>;
+                            if (st.lost) return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500/15 text-red-300">✗ LOST</span>;
+                            return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white/[0.05] text-white/40">⏳ pending</span>;
+                          })()}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-5">
+                        <code className="flex-1 text-xs font-mono tracking-[0.08em] text-sky-200/60 bg-black/30 rounded-xl px-3 py-2.5 truncate">
+                          {daySlip.code}
+                        </code>
+                        <button onClick={() => copy(daySlip.code)}
+                          className={`shrink-0 px-4 py-2.5 rounded-xl text-[11px] font-semibold transition-all ${
+                            copied === daySlip.code
+                              ? "bg-sky-500/25 text-sky-200"
+                              : "bg-sky-500/15 border border-sky-500/30 text-sky-300 hover:bg-sky-500/25"
+                          }`}>
+                          {copied === daySlip.code ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                        {daySlip.picks.slice(0, showDayAll ? daySlip.picks.length : 10).map((p, j) => (
+                          <div key={j} className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 bg-black/20 border border-white/[0.04]">
+                            <div className="min-w-0">
+                              <p className="text-xs truncate text-white/70">
+                                <span className="mr-1">{sportEmoji(p.sportId)}</span>
+                                {p.homeTeam} <span className="text-white/15">vs</span> {p.awayTeam}
+                              </p>
+                              <p className="text-[10px] text-white/30 truncate">{p.marketDesc} — {p.pickDesc} · {p.tournament}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-sm font-bold text-sky-400 tabular-nums">@{p.odds}</span>
+                              <p className="text-[9px] text-white/30 tabular-nums">{Math.round(p.probability * 100)}%</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {daySlip.picks.length > 10 && (
+                        <button onClick={() => setShowDayAll(!showDayAll)}
+                          className="w-full py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[11px] font-semibold text-white/45 hover:text-white/75 hover:bg-white/[0.06] transition-all">
+                          {showDayAll ? "▲ Show fewer" : `▼ Show all ${daySlip.picks.length} games`}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

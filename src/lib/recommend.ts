@@ -814,6 +814,89 @@ export async function getDrawRecommendation(): Promise<RecommendedSlip | null> {
   }
 }
 
+// ── Day Sweep (all 1.2–1.4 picks in one code) ──────────────────────
+//
+// Gathers EVERY same-day selection with odds in [1.20, 1.40] — one pick
+// per match (the single most-probable outcome in the band) — and bundles
+// them all into a single SportyBet booking code. This is a "full coverage"
+// sweep: high-probability legs across the whole fixture list, not a
+// targeted accumulator.
+
+export const DAY_MIN_ODDS = 1.20;
+export const DAY_MAX_ODDS = 1.40;
+
+async function collectDayPicks(): Promise<SafePick[]> {
+  const results = await Promise.all(SPORTS_TO_SCAN.map(s => fetchSportEvents(s.id)));
+  const bestPerEvent = new Map<string, SafePick>();
+
+  for (const tournaments of results) {
+    for (const tournament of tournaments) {
+      for (const event of tournament.events) {
+        if (event.matchStatus !== "Not start") continue;
+        if (!isSameDay(event.estimateStartTime)) continue;
+
+        const league = event.sport.category.tournament.name;
+        const country = event.sport.category.name;
+        if (leagueWeight(league, country) === 0) continue; // skip simulated
+        if (event.sport.id.startsWith("sr:sport:202")) continue; // skip virtual
+
+        for (const market of event.markets) {
+          for (const outcome of market.outcomes) {
+            const odds = parseFloat(outcome.odds);
+            if (odds < DAY_MIN_ODDS || odds > DAY_MAX_ODDS) continue;
+
+            const prob = parseFloat(outcome.probability || "0");
+            const pick: SafePick = {
+              eventId: event.eventId,
+              marketId: market.id,
+              outcomeId: outcome.id,
+              specifier: market.specifier || undefined,
+              productId: market.product,
+              sportId: event.sport.id,
+              homeTeam: event.homeTeamName,
+              awayTeam: event.awayTeamName,
+              tournament: league,
+              marketDesc: market.desc,
+              pickDesc: outcome.desc,
+              odds,
+              probability: prob,
+              safetyScore: prob,
+            };
+
+            const existing = bestPerEvent.get(event.eventId);
+            if (!existing || prob > existing.probability) {
+              bestPerEvent.set(event.eventId, pick);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(bestPerEvent.values()).sort((a, b) => b.probability - a.probability);
+}
+
+export async function getDaySlip(): Promise<RecommendedSlip | null> {
+  const picks = await collectDayPicks();
+  if (picks.length < 5) return null;
+
+  try {
+    const code = await createBookCode(picks.map(toSportySelection));
+    // Combined odds = product of every leg. Can get astronomically large
+    // (e.g. 250 legs at ~1.3 → 10^28), so guard against float overflow.
+    let combined = 1;
+    for (const p of picks) {
+      combined *= p.odds;
+      if (!isFinite(combined)) break;
+    }
+    const actualOdds = isFinite(combined) ? combined : Number.MAX_VALUE;
+    return { targetOdds: 0, actualOdds, code, picks };
+  } catch (e) {
+    console.error("Failed to create day-sweep code:", e);
+    return null;
+  }
+}
+
 // ── Team lookup helpers (cached) ───────────────────────────────────
 
 async function findTeamCached(
