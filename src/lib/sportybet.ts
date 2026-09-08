@@ -2,6 +2,15 @@
 
 const BASE = "https://www.sportybet.com/api/ng/orders/share";
 
+// SportyBet's CloudFront blocks bare/generic user-agents (403). A realistic
+// desktop Chrome UA passes. Keep Accept-Language + sec-ch-ua for good measure.
+const BROWSER_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Accept": "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+
 export interface SportySelection {
   eventId: string;
   marketId: string;
@@ -58,10 +67,7 @@ export interface SharedTicket {
 
 export async function fetchBookCode(code: string): Promise<SharedTicket> {
   const res = await fetch(`${BASE}/${code}`, {
-    headers: {
-      "User-Agent": "Mozilla/5.0",
-      "Accept": "application/json",
-    },
+    headers: BROWSER_HEADERS,
   });
 
   if (!res.ok) throw new Error(`Failed to fetch code: ${res.status}`);
@@ -80,10 +86,7 @@ export async function fetchBookCode(code: string): Promise<SharedTicket> {
 export async function fetchEventDetail(eventId: string): Promise<SportyOutcome | null> {
   try {
     const res = await fetch(`https://www.sportybet.com/api/ng/factsCenter/event?eventId=${encodeURIComponent(eventId)}`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-      },
+      headers: BROWSER_HEADERS,
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -98,8 +101,8 @@ export async function createBookCode(selections: SportySelection[]): Promise<str
   const res = await fetch(BASE, {
     method: "POST",
     headers: {
+      ...BROWSER_HEADERS,
       "Content-Type": "application/json",
-      "User-Agent": "Mozilla/5.0",
     },
     body: JSON.stringify({ selections }),
   });
