@@ -142,7 +142,7 @@ export default function Home() {
   const [recommendations, setRecommendations] = useState<RecommendedSlip[]>([]);
   const [drawSlip, setDrawSlip] = useState<RecommendedSlip | null>(null);
   const [riskySlip, setRiskySlip] = useState<RecommendedSlip | null>(null);
-  const [daySlip, setDaySlip] = useState<RecommendedSlip | null>(null);
+  const [daySlips, setDaySlips] = useState<RecommendedSlip[]>([]);
   const [recsLoading, setRecsLoading] = useState(true);
   const [recsError, setRecsError] = useState("");
   const [recResults, setRecResults] = useState<Record<string, { won: number; lost: number; pending: number; picks: Array<{ result: "won" | "lost" | "pending" }> }>>({});
@@ -151,7 +151,7 @@ export default function Home() {
   const RESULTS_PER_PAGE = 10;
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [dbHistory, setDbHistory] = useState<HistoryEntry[]>([]);
-  const [showDayAll, setShowDayAll] = useState(false);
+  const [showDayAll, setShowDayAll] = useState<Set<string>>(new Set());
 
   useEffect(() => { setHistory(loadHistory()); }, []);
 
@@ -167,7 +167,7 @@ export default function Home() {
             setRecommendations(d.slips);
             setDrawSlip(d.draw || null);
             setRiskySlip(d.risky || null);
-            setDaySlip(d.day || null);
+            setDaySlips(Array.isArray(d.day) ? d.day : []);
             setRecResults(d.results || {});
             const hist: HistoryEntry[] = (d.history || []).map((h: any) => ({
               code: h.code,
@@ -204,7 +204,7 @@ export default function Home() {
   const checkRecResults = async () => {
     const slips = drawSlip ? [...recommendations, drawSlip] : recommendations;
     if (riskySlip) slips.push(riskySlip);
-    if (daySlip) slips.push(daySlip);
+    for (const ds of daySlips) slips.push(ds);
     if (checkingResults || slips.length === 0) return;
     setCheckingResults(true);
     const results: typeof recResults = {};
@@ -628,7 +628,7 @@ export default function Home() {
               </div>
             )}
 
-            {!recsLoading && (recommendations.length > 0 || drawSlip || riskySlip || daySlip) && (
+            {!recsLoading && (recommendations.length > 0 || drawSlip || riskySlip || daySlips.length > 0) && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 {recommendations.length > 0 && (<>
                 <div className="flex items-center justify-between gap-3 mb-5">
@@ -852,28 +852,30 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* ── DAY SWEEP (all 1.2–1.4 picks) ── */}
-                {daySlip && (
-                  <div className="mt-6 relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500/[0.08] via-transparent to-blue-500/[0.06] border border-sky-500/25 p-6">
+                {/* ── DAY SWEEP (all 1.2–1.75 picks, split into ≤40-leg codes) ── */}
+                {daySlips.map((ds, idx) => (
+                  <div key={ds.code} className="mt-6 relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500/[0.08] via-transparent to-blue-500/[0.06] border border-sky-500/25 p-6">
                     <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-sky-500/[0.12] blur-[90px] pointer-events-none" />
                     <div className="relative">
                       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
                         <div className="flex items-center gap-3">
                           <span className="text-xl">🌊</span>
                           <div>
-                            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-sky-400">Day Sweep · every 1.2–1.4 pick</h2>
+                            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-sky-400">
+                              Day Sweep · every 1.2–1.75 pick{daySlips.length > 1 ? ` · Part ${idx + 1}/${daySlips.length}` : ""}
+                            </h2>
                             <p className="text-[11px] text-white/35 mt-0.5">
-                              {daySlip.picks.length} games — one high-probability leg per match, all bundled into a single code
+                              {ds.picks.length} games — one high-probability leg per match, bundled into one code
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-sky-500/10 text-sky-300/80 tabular-nums">
-                            {fmtCombined(daySlip.actualOdds)}× combined
+                            {fmtCombined(ds.actualOdds)}× combined
                           </span>
                           {(() => {
-                            const res = recResults[daySlip.code];
-                            const st = slipStatus(res, daySlip.picks.length);
+                            const res = recResults[ds.code];
+                            const st = slipStatus(res, ds.picks.length);
                             if (st.won) return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300">✓ WON</span>;
                             if (st.lost) return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500/15 text-red-300">✗ LOST</span>;
                             return <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white/[0.05] text-white/40">⏳ pending</span>;
@@ -883,20 +885,20 @@ export default function Home() {
 
                       <div className="flex items-center gap-2 mb-5">
                         <code className="flex-1 text-xs font-mono tracking-[0.08em] text-sky-200/60 bg-black/30 rounded-xl px-3 py-2.5 truncate">
-                          {daySlip.code}
+                          {ds.code}
                         </code>
-                        <button onClick={() => copy(daySlip.code)}
+                        <button onClick={() => copy(ds.code)}
                           className={`shrink-0 px-4 py-2.5 rounded-xl text-[11px] font-semibold transition-all ${
-                            copied === daySlip.code
+                            copied === ds.code
                               ? "bg-sky-500/25 text-sky-200"
                               : "bg-sky-500/15 border border-sky-500/30 text-sky-300 hover:bg-sky-500/25"
                           }`}>
-                          {copied === daySlip.code ? "Copied" : "Copy"}
+                          {copied === ds.code ? "Copied" : "Copy"}
                         </button>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-                        {daySlip.picks.slice(0, showDayAll ? daySlip.picks.length : 10).map((p, j) => (
+                        {ds.picks.slice(0, showDayAll.has(ds.code) ? ds.picks.length : 10).map((p, j) => (
                           <div key={j} className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 bg-black/20 border border-white/[0.04]">
                             <div className="min-w-0">
                               <p className="text-xs truncate text-white/70">
@@ -913,15 +915,19 @@ export default function Home() {
                         ))}
                       </div>
 
-                      {daySlip.picks.length > 10 && (
-                        <button onClick={() => setShowDayAll(!showDayAll)}
+                      {ds.picks.length > 10 && (
+                        <button onClick={() => setShowDayAll(prev => {
+                          const n = new Set(prev);
+                          if (n.has(ds.code)) n.delete(ds.code); else n.add(ds.code);
+                          return n;
+                        })}
                           className="w-full py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[11px] font-semibold text-white/45 hover:text-white/75 hover:bg-white/[0.06] transition-all">
-                          {showDayAll ? "▲ Show fewer" : `▼ Show all ${daySlip.picks.length} games`}
+                          {showDayAll.has(ds.code) ? "▲ Show fewer" : `▼ Show all ${ds.picks.length} games`}
                         </button>
                       )}
                     </div>
                   </div>
-                )}
+                ))}
 
                 <p className="mt-5 text-[11px] text-white/15 text-center">
                   Recommendations refresh every 4 hours. Algorithmically built from live SportyBet data — odds may shift.

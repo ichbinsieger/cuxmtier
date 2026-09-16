@@ -6,7 +6,7 @@
 //   - /api/cron      (Vercel Cron: generate on an interval + check results)
 //   - /api/recommend (serves the persisted slips/results to the client)
 
-import { getRecommendations, getDrawRecommendation, getRiskyRecommendation, getDaySlip, RecommendedSlip } from "./recommend";
+import { getRecommendations, getDrawRecommendation, getRiskyRecommendation, getDaySlips, RecommendedSlip } from "./recommend";
 import { fetchBookCode } from "./sportybet";
 import { query } from "./db";
 
@@ -84,9 +84,9 @@ export async function generateAndStore(force = false): Promise<number> {
   const slips = await getRecommendations();
   const drawSlip = await getDrawRecommendation();
   const riskySlip = await getRiskyRecommendation();
-  const daySlip = await getDaySlip();
+  const daySlips = await getDaySlips();
 
-  if (slips.length === 0 && !drawSlip && !riskySlip && !daySlip) return 0;
+  if (slips.length === 0 && !drawSlip && !riskySlip && daySlips.length === 0) return 0;
 
   const batchId = new Date().toISOString();
   for (const slip of slips) {
@@ -116,7 +116,7 @@ export async function generateAndStore(force = false): Promise<number> {
     );
   }
 
-  if (daySlip) {
+  for (const daySlip of daySlips) {
     await query(
       `INSERT INTO recommendations (code, batch_id, target_odds, actual_odds, kind, picks)
        VALUES ($1, $2, $3, $4, 'day', $5)
@@ -125,7 +125,7 @@ export async function generateAndStore(force = false): Promise<number> {
     );
   }
 
-  return slips.length + (drawSlip ? 1 : 0) + (riskySlip ? 1 : 0) + (daySlip ? 1 : 0);
+  return slips.length + (drawSlip ? 1 : 0) + (riskySlip ? 1 : 0) + daySlips.length;
 }
 
 // Check every not-fully-resolved slip and update its result in the DB.
@@ -227,17 +227,25 @@ export async function getStoredData() {
     if (latestRisky.result) results[latestRisky.code] = latestRisky.result;
   }
 
-  // Day sweep — every same-day 1.2–1.4 pick bundled into one code.
-  let daySlip: RecommendedSlip | null = null;
-  const latestDay = rows.find((r) => r.kind === "day");
-  if (latestDay && isTodayLagos(latestDay.created_at)) {
-    daySlip = {
-      targetOdds: Number(latestDay.target_odds),
-      actualOdds: Number(latestDay.actual_odds),
-      code: latestDay.code,
-      picks: latestDay.picks,
-    };
-    if (latestDay.result) results[latestDay.code] = latestDay.result;
+  // Day sweep — every same-day 1.2–1.75 pick bundled into codes of ≤40 legs.
+  // All chunks of a batch share a batch_id; serve only the latest batch so a
+  // regenerated sweep replaces (not appends) the previous one.
+  let daySlips: RecommendedSlip[] = [];
+  const dayRows = rows.filter((r) => r.kind === "day");
+  if (dayRows.length > 0 && isTodayLagos(dayRows[0].created_at)) {
+    const latestDayBatch = dayRows[0].batch_id;
+    const latestDayRows = dayRows
+      .filter((r) => r.batch_id === latestDayBatch)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    for (const r of latestDayRows) {
+      daySlips.push({
+        targetOdds: Number(r.target_odds),
+        actualOdds: Number(r.actual_odds),
+        code: r.code,
+        picks: r.picks,
+      });
+      if (r.result) results[r.code] = r.result;
+    }
   }
 
   const history = rows.map((r) => ({
@@ -257,5 +265,5 @@ export async function getStoredData() {
     checkedAt: r.checked_at ? new Date(r.checked_at).getTime() : undefined,
   }));
 
-  return { slips, draw: drawSlip, risky: riskySlip, day: daySlip, results, history };
+  return { slips, draw: drawSlip, risky: riskySlip, day: daySlips, results, history };
 }

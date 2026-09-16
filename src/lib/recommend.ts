@@ -814,16 +814,27 @@ export async function getDrawRecommendation(): Promise<RecommendedSlip | null> {
   }
 }
 
-// ── Day Sweep (all 1.2–1.4 picks in one code) ──────────────────────
+// ── Day Sweep (all 1.2–1.75 picks, split into ≤40-leg codes) ───────
 //
-// Gathers EVERY same-day selection with odds in [1.20, 1.40] — one pick
-// per match (the single most-probable outcome in the band) — and bundles
-// them all into a single SportyBet booking code. This is a "full coverage"
-// sweep: high-probability legs across the whole fixture list, not a
-// targeted accumulator.
+// Gathers EVERY same-day selection with odds in [1.20, 1.75] — one pick
+// per match (the single most-probable outcome in the band) — from clean
+// goal markets only (Over/Under goal lines + Double Chance). This is a
+// "full coverage" sweep: high-probability legs across the whole fixture
+// list, not a targeted accumulator.
+//
+// "Under 3.5" and the other goal-line unders sit ~1.40–1.75, which the old
+// 1.40 ceiling excluded — widening to 1.75 lets them in. The sweep is split
+// into codes of at most 40 legs so a 250-match day doesn't collapse into one
+// unfillable mega-slip.
 
 export const DAY_MIN_ODDS = 1.20;
-export const DAY_MAX_ODDS = 1.40;
+export const DAY_MAX_ODDS = 1.75;
+export const DAY_SPLIT_SIZE = 40;
+
+// Clean markets the day sweep may pick from — Over/Under goal lines and
+// Double Chance. Handicap / 1X2 / Draw No Bet / Odd/Even / "Over/Under &
+// GG/NG" combo are excluded so the sweep stays focused on safe goal lines.
+const DAY_MARKETS = new Set(["over/under", "double chance"]);
 
 async function collectDayPicks(): Promise<SafePick[]> {
   const results = await Promise.all(SPORTS_TO_SCAN.map(s => fetchSportEvents(s.id)));
@@ -841,6 +852,7 @@ async function collectDayPicks(): Promise<SafePick[]> {
         if (event.sport.id.startsWith("sr:sport:202")) continue; // skip virtual
 
         for (const market of event.markets) {
+          if (!DAY_MARKETS.has(market.desc.toLowerCase().trim())) continue;
           for (const outcome of market.outcomes) {
             const odds = parseFloat(outcome.odds);
             if (odds < DAY_MIN_ODDS || odds > DAY_MAX_ODDS) continue;
@@ -876,25 +888,41 @@ async function collectDayPicks(): Promise<SafePick[]> {
   return Array.from(bestPerEvent.values()).sort((a, b) => b.probability - a.probability);
 }
 
-export async function getDaySlip(): Promise<RecommendedSlip | null> {
+export async function getDaySlips(): Promise<RecommendedSlip[]> {
   const picks = await collectDayPicks();
-  if (picks.length < 5) return null;
+  if (picks.length < 5) return [];
 
-  try {
-    const code = await createBookCode(picks.map(toSportySelection));
-    // Combined odds = product of every leg. Can get astronomically large
-    // (e.g. 250 legs at ~1.3 → 10^28), so guard against float overflow.
-    let combined = 1;
-    for (const p of picks) {
-      combined *= p.odds;
-      if (!isFinite(combined)) break;
-    }
-    const actualOdds = isFinite(combined) ? combined : Number.MAX_VALUE;
-    return { targetOdds: 0, actualOdds, code, picks };
-  } catch (e) {
-    console.error("Failed to create day-sweep code:", e);
-    return null;
+  // Split into codes of at most DAY_SPLIT_SIZE legs. A busy day has 200+
+  // qualifying matches — one giant code is unfillable and its combined odds
+  // overflow float, so chunk into 40-leg slips.
+  const chunks: SafePick[][] = [];
+  for (let i = 0; i < picks.length; i += DAY_SPLIT_SIZE) {
+    chunks.push(picks.slice(i, i + DAY_SPLIT_SIZE));
   }
+  // A 40/40/.../3 split leaves a near-empty orphan "Part N/N" — fold it into
+  // the previous chunk instead of emitting a useless 1–4 leg code.
+  if (chunks.length > 1 && chunks[chunks.length - 1].length < 5) {
+    const orphan = chunks.pop()!;
+    chunks[chunks.length - 1].push(...orphan);
+  }
+
+  const slips: RecommendedSlip[] = [];
+  for (const chunk of chunks) {
+    try {
+      const code = await createBookCode(chunk.map(toSportySelection));
+      // Combined odds = product of every leg. Guard against float overflow.
+      let combined = 1;
+      for (const p of chunk) {
+        combined *= p.odds;
+        if (!isFinite(combined)) break;
+      }
+      const actualOdds = isFinite(combined) ? combined : Number.MAX_VALUE;
+      slips.push({ targetOdds: 0, actualOdds, code, picks: chunk });
+    } catch (e) {
+      console.error("Failed to create day-sweep code:", e);
+    }
+  }
+  return slips;
 }
 
 // ── Team lookup helpers (cached) ───────────────────────────────────
