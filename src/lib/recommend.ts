@@ -814,27 +814,16 @@ export async function getDrawRecommendation(): Promise<RecommendedSlip | null> {
   }
 }
 
-// ── Day Sweep (all 1.2–1.75 picks, split into ≤40-leg codes) ───────
+// ── Day Sweep (all 1.2–1.4 picks, no "Under" legs, split ≤40) ──────
 //
-// Gathers EVERY same-day selection with odds in [1.20, 1.75] — one pick
-// per match (the single most-probable outcome in the band) — from clean
-// goal markets only (Over/Under goal lines + Double Chance). This is a
-// "full coverage" sweep: high-probability legs across the whole fixture
-// list, not a targeted accumulator.
-//
-// "Under 3.5" and the other goal-line unders sit ~1.40–1.75, which the old
-// 1.40 ceiling excluded — widening to 1.75 lets them in. The sweep is split
-// into codes of at most 40 legs so a 250-match day doesn't collapse into one
-// unfillable mega-slip.
+// Gathers EVERY same-day selection with odds in [1.20, 1.40] — one pick
+// per match (the single most-probable outcome in the band) — and bundles
+// them into codes of at most 40 legs. "Under X" outcomes are excluded
+// entirely; everything else in the band is eligible.
 
 export const DAY_MIN_ODDS = 1.20;
-export const DAY_MAX_ODDS = 1.75;
+export const DAY_MAX_ODDS = 1.40;
 export const DAY_SPLIT_SIZE = 40;
-
-// Clean markets the day sweep may pick from — Over/Under goal lines and
-// Double Chance. Handicap / 1X2 / Draw No Bet / Odd/Even / "Over/Under &
-// GG/NG" combo are excluded so the sweep stays focused on safe goal lines.
-const DAY_MARKETS = new Set(["over/under", "double chance"]);
 
 async function collectDayPicks(): Promise<SafePick[]> {
   const results = await Promise.all(SPORTS_TO_SCAN.map(s => fetchSportEvents(s.id)));
@@ -852,8 +841,9 @@ async function collectDayPicks(): Promise<SafePick[]> {
         if (event.sport.id.startsWith("sr:sport:202")) continue; // skip virtual
 
         for (const market of event.markets) {
-          if (!DAY_MARKETS.has(market.desc.toLowerCase().trim())) continue;
           for (const outcome of market.outcomes) {
+            // Skip every "Under X" outcome — unders are not wanted here.
+            if (outcome.desc.toLowerCase().startsWith("under")) continue;
             const odds = parseFloat(outcome.odds);
             if (odds < DAY_MIN_ODDS || odds > DAY_MAX_ODDS) continue;
 

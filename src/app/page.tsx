@@ -852,7 +852,7 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* ── DAY SWEEP (all 1.2–1.75 picks, split into ≤40-leg codes) ── */}
+                {/* ── DAY SWEEP (all 1.2–1.4 picks, no Under legs, split ≤40) ── */}
                 {daySlips.map((ds, idx) => (
                   <div key={ds.code} className="mt-6 relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500/[0.08] via-transparent to-blue-500/[0.06] border border-sky-500/25 p-6">
                     <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-sky-500/[0.12] blur-[90px] pointer-events-none" />
@@ -862,7 +862,7 @@ export default function Home() {
                           <span className="text-xl">🌊</span>
                           <div>
                             <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-sky-400">
-                              Day Sweep · every 1.2–1.75 pick{daySlips.length > 1 ? ` · Part ${idx + 1}/${daySlips.length}` : ""}
+                              Day Sweep · every 1.2–1.4 pick{daySlips.length > 1 ? ` · Part ${idx + 1}/${daySlips.length}` : ""}
                             </h2>
                             <p className="text-[11px] text-white/35 mt-0.5">
                               {ds.picks.length} games — one high-probability leg per match, bundled into one code

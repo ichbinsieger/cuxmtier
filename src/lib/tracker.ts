@@ -227,7 +227,7 @@ export async function getStoredData() {
     if (latestRisky.result) results[latestRisky.code] = latestRisky.result;
   }
 
-  // Day sweep — every same-day 1.2–1.75 pick bundled into codes of ≤40 legs.
+  // Day sweep — every same-day 1.2–1.4 pick (no Under legs) bundled into codes of ≤40 legs.
   // All chunks of a batch share a batch_id; serve only the latest batch so a
   // regenerated sweep replaces (not appends) the previous one.
   let daySlips: RecommendedSlip[] = [];
