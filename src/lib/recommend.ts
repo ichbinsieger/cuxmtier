@@ -337,11 +337,24 @@ function buildSlip(
   minGames: number,
   maxGames: number
 ): SafePick[] | null {
-  // Deduplicate by event — keep highest safety score per event
+  // Deduplicate by event — keep the leg whose odds best fit the TARGET, not
+  // the highest safety score. The safest leg is always the lowest-odds one
+  // (e.g. "Double Chance — Home or Away" ~1.30 beats "Draw or Away" ~1.47 on
+  // safety every time), so "highest safety" keeps ~1.30 legs that can never
+  // compound to a 10x/15x target. That starves high-target slips of the
+  // ~1.47 legs they need and makes them undershoot the minimum-odds gate.
+  const idealLog = Math.log(targetOdds) / maxGames; // ideal per-leg odds
   const bestPerEvent = new Map<string, SafePick>();
   for (const p of picks) {
     const existing = bestPerEvent.get(p.eventId);
-    if (!existing || p.safetyScore > existing.safetyScore) {
+    if (!existing) {
+      bestPerEvent.set(p.eventId, p);
+      continue;
+    }
+    const pDist = Math.abs(Math.log(p.odds) - idealLog);
+    const eDist = Math.abs(Math.log(existing.odds) - idealLog);
+    // Prefer the odds-closest leg; on a tie keep the safer one.
+    if (pDist < eDist || (Math.abs(pDist - eDist) < 1e-9 && p.safetyScore > existing.safetyScore)) {
       bestPerEvent.set(p.eventId, p);
     }
   }

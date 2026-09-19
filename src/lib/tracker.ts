@@ -236,7 +236,9 @@ export async function getStoredData() {
     const latestDayBatch = dayRows[0].batch_id;
     const latestDayRows = dayRows
       .filter((r) => r.batch_id === latestDayBatch)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      // created_at is a Date object from pg (TIMESTAMPTZ), not a string —
+      // .localeCompare() would throw and nuke the whole getStoredData() call.
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     for (const r of latestDayRows) {
       daySlips.push({
         targetOdds: Number(r.target_odds),
