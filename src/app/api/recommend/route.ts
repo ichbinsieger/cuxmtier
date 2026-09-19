@@ -10,12 +10,28 @@ export const maxDuration = 300;
 export async function GET() {
   try {
     await ensureSchema();
-    // Regenerate a fresh batch whenever the current one is stale (>4h old).
-    // generateAndStore() self-throttles to GENERATE_INTERVAL_MS internally, so
-    // this is a cheap no-op for most requests — it only actually scans SportyBet
-    // and creates new booking codes once every 4 hours.
-    await generateAndStore();
     const data = await getStoredData();
+
+    // Only generate synchronously when the DB is genuinely empty (fresh
+    // deploy). Otherwise the 4-hourly cron keeps things fresh — page loads
+    // must stay fast, and a full SportyBet scan here was causing multi-minute
+    // hangs. Stale data (a few hours old) is served as-is rather than blocking.
+    const isEmpty =
+      data.slips.length === 0 &&
+      !data.draw &&
+      !data.risky &&
+      data.day.length === 0 &&
+      data.history.length === 0;
+
+    if (isEmpty) {
+      await generateAndStore(true);
+      const fresh = await getStoredData();
+      return NextResponse.json(fresh, {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=300",
+        },
+      });
+    }
 
     const response = NextResponse.json(data);
     // Short edge cache: cron refreshes results every ~15 min, so don't hold

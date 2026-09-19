@@ -260,10 +260,12 @@ export async function getStoredData() {
     avgEv: 0,
     avgRisk: 0,
     type: r.kind === "draw" ? "draw" : "generated",
-    picks: (r.picks || []).map((p: any, i: number) => ({
-      ...p,
-      result: (r.result?.picks?.[i]?.result as any) || "pending",
-    })),
+    // Only the per-pick result is needed for the Results History table — the
+    // full pick objects (home/away teams, markets, odds, safety scores) were
+    // ~1.5MB of redundant data on every page load. Drop everything but result.
+    picks: ((r.result?.picks as Array<{ result?: string }> | undefined) ||
+      (r.picks || []).map(() => ({ result: "pending" }))
+    ).map((p: any) => ({ result: p?.result || "pending" })),
     checkedAt: r.checked_at ? new Date(r.checked_at).getTime() : undefined,
   }));
 
